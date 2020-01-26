@@ -1,0 +1,15 @@
+[package]
+name = "vadeen_osm"
+version = "0.1.0"
+license = "MIT"
+authors = ["Felix Stridsberg <felix.stridsberg@gmail.com>"]
+edition = "2018"
+
+repository = "https://github.com/FelixStridsberg/vadeen_osm"
+
+description = "IO and builder library for Open Street Map data."
+readme = "README.md"
+
+[dependencies]
+chrono = "0.4"
+quick-xml = "0.17"

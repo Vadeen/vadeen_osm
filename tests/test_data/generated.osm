@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="gis-osm v0.1.0">
+	<bounds minlat="60.67505" minlon="17.13625" maxlat="60.67631" maxlon="17.13898"/>
+	<node id="356912" lat="60.6746147" lon="17.1317579" uid="438299" user="Essin" changeset="29646783" version="5">
+		<tag k="highway" v="crossing"/>
+	</node>
+	<node id="220610830" lat="60.6762383" lon="17.1381906" uid="12140" user="Dalkvist" changeset="866836" version="4"/>
+	<way id="20434219" uid="12140" user="Dalkvist" changeset="647775" version="6">
+		<nd ref="218099927"/>
+		<nd ref="218102185"/>
+		<tag k="created_by" v="Potlatch 0.6a"/>
+		<tag k="highway" v="residential"/>
+		<tag k="maxspeed" v="30"/>
+		<tag k="name" v="Ruddammsgatan"/>
+	</way>
+	<relation id="1604937" uid="113813" user="AndersAndersson" changeset="11221181" version="2">
+		<member type="way" ref="115494549" role="inner"/>
+		<member type="way" ref="115494554" role="outer"/>
+		<tag k="building" v="yes"/>
+		<tag k="type" v="multipolygon"/>
+	</relation>
+</osm>
