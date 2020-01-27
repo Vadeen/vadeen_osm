@@ -7,7 +7,7 @@ use crate::{Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use std::io::Write;
 
 const OSM_VERSION: &str = "0.6";
-const OSM_GENERATOR: &str = concat!("gis-osm v", env!("CARGO_PKG_VERSION"));
+const OSM_GENERATOR: &str = "Vadeen OSM";
 const XML_VERSION: &[u8] = b"1.0";
 const XML_ENCODING: &[u8] = b"UTF-8";
 

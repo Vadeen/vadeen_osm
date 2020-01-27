@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<osm version="0.6" generator="gis-osm v0.1.0">
+<osm version="0.6" generator="Vadeen OSM">
 	<bounds minlat="60.67505" minlon="17.13625" maxlat="60.67631" maxlon="17.13898"/>
 	<node id="356912" lat="60.6746147" lon="17.1317579" uid="438299" user="Essin" changeset="29646783" version="5">
 		<tag k="highway" v="crossing"/>
