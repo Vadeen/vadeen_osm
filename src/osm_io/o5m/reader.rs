@@ -1,4 +1,5 @@
 use super::*;
+use super::varint::VarInt;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Result;
 use crate::osm_io::error::{Error, ErrorKind};
@@ -400,75 +401,10 @@ impl<R: BufRead> OsmReader for O5mReader<R> {
 
 #[cfg(test)]
 mod test {
-    use super::O5mDecoder;
     use crate::geo::Coordinate;
     use crate::osm_io::o5m::O5mReader;
     use crate::{AuthorInformation, Meta, Node, Relation, RelationMember, Way};
     use std::io::BufReader;
-
-    #[test]
-    fn one_byte_uvarint() {
-        let data = vec![0x05];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(1);
-        assert_eq!(reader.read_uvarint().unwrap(), 5);
-    }
-
-    #[test]
-    fn max_one_byte_uvarint() {
-        let data = vec![0x7F];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(1);
-        assert_eq!(reader.read_uvarint().unwrap(), 127);
-    }
-
-    #[test]
-    fn two_bytes_uvarint() {
-        let data = vec![0xC3, 0x02];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(2);
-        assert_eq!(reader.read_uvarint().unwrap(), 323);
-    }
-
-    #[test]
-    fn three_byte_uvarint() {
-        let data = vec![0x80, 0x80, 0x01];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(3);
-        assert_eq!(reader.read_uvarint().unwrap(), 16384);
-    }
-
-    #[test]
-    fn one_byte_positive_varint() {
-        let data = vec![0x08];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(1);
-        assert_eq!(reader.read_varint().unwrap(), 4);
-    }
-
-    #[test]
-    fn one_byte_negative_varint() {
-        let data = vec![0x03];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(1);
-        assert_eq!(reader.read_varint().unwrap(), -2);
-    }
-
-    #[test]
-    fn four_byte_positive_varint() {
-        let data = vec![0x94, 0xfe, 0xd2, 0x05];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(4);
-        assert_eq!(reader.read_varint().unwrap(), 5922698);
-    }
-
-    #[test]
-    fn two_byte_negative_varint() {
-        let data = vec![0x81, 0x01];
-        let mut reader = O5mDecoder::new(data.as_slice());
-        reader.set_limit(2);
-        assert_eq!(reader.read_varint().unwrap(), -65);
-    }
 
     #[test]
     fn read_node() {
