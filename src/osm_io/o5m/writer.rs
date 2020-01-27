@@ -8,6 +8,7 @@ use crate::osm_io::o5m::Delta::{Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, 
 use crate::osm_io::OsmWriter;
 use crate::{Node, Osm, Relation, RelationMember, Way};
 use std::collections::VecDeque;
+use crate::osm_io::o5m::varint::VarInt;
 
 /// Todo write user information etc...
 /// A writer for the o5m binary format.
@@ -43,14 +44,14 @@ impl<W: Write> O5mWriter<W> {
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Bounding_Box
     fn write_bounding_box(&mut self, boundary: &Boundary) -> io::Result<()> {
         let mut bytes = Vec::new();
-        bytes.append(&mut varint_to_bytes(boundary.min.lon.into()));
-        bytes.append(&mut varint_to_bytes(boundary.min.lat.into()));
-        bytes.append(&mut varint_to_bytes(boundary.max.lon.into()));
-        bytes.append(&mut varint_to_bytes(boundary.max.lat.into()));
+        bytes.append(&mut VarInt::create_bytes(boundary.min.lon));
+        bytes.append(&mut VarInt::create_bytes(boundary.min.lat));
+        bytes.append(&mut VarInt::create_bytes(boundary.max.lon));
+        bytes.append(&mut VarInt::create_bytes(boundary.max.lat));
 
         self.inner.write_all(&[O5M_BOUNDING_BOX])?;
         self.inner
-            .write_all(&uvarint_to_bytes(bytes.len() as u64))?;
+            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -60,7 +61,7 @@ impl<W: Write> O5mWriter<W> {
         let bytes = self.encoder.node_to_bytes(node);
         self.inner.write_all(&[O5M_NODE])?;
         self.inner
-            .write_all(&uvarint_to_bytes(bytes.len() as u64))?;
+            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -70,7 +71,7 @@ impl<W: Write> O5mWriter<W> {
         let bytes = self.encoder.way_to_bytes(way);
         self.inner.write_all(&[O5M_WAY])?;
         self.inner
-            .write_all(&uvarint_to_bytes(bytes.len() as u64))?;
+            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -80,7 +81,7 @@ impl<W: Write> O5mWriter<W> {
         let bytes = self.encoder.relation_to_bytes(rel);
         self.inner.write_all(&[O5M_RELATION])?;
         self.inner
-            .write_all(&uvarint_to_bytes(bytes.len() as u64))?;
+            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -141,11 +142,11 @@ impl O5mEncoder {
         let delta_coordinate = self.delta_coordinate(node.coordinate);
 
         let mut bytes = Vec::new();
-        bytes.append(&mut varint_to_bytes(delta_id));
-        bytes.append(&mut uvarint_to_bytes(node.meta.version as u64));
+        bytes.append(&mut VarInt::create_bytes(delta_id));
+        bytes.append(&mut VarInt::create_bytes(node.meta.version));
         bytes.push(0x00); // Timestamp
-        bytes.append(&mut varint_to_bytes(delta_coordinate.lon.into()));
-        bytes.append(&mut varint_to_bytes(delta_coordinate.lat.into()));
+        bytes.append(&mut VarInt::create_bytes(delta_coordinate.lon));
+        bytes.append(&mut VarInt::create_bytes(delta_coordinate.lat));
 
         for tag in &node.meta.tags {
             bytes.append(&mut self.string_pair_to_bytes(&tag.key, &tag.value));
@@ -161,10 +162,10 @@ impl O5mEncoder {
         let mut ref_bytes = self.way_refs_to_bytes(&way.refs);
 
         let mut bytes = Vec::new();
-        bytes.append(&mut varint_to_bytes(delta_id));
-        bytes.append(&mut uvarint_to_bytes(way.meta.version as u64));
+        bytes.append(&mut VarInt::create_bytes(delta_id));
+        bytes.append(&mut VarInt::create_bytes(way.meta.version));
         bytes.push(0x00); // Timestamp
-        bytes.append(&mut uvarint_to_bytes(ref_bytes.len() as u64));
+        bytes.append(&mut VarInt::create_bytes(ref_bytes.len() as u64));
         bytes.append(&mut ref_bytes);
 
         for tag in &way.meta.tags {
@@ -179,7 +180,7 @@ impl O5mEncoder {
         let mut bytes = Vec::new();
         for i in refs {
             let delta = self.delta.encode(WayRef, *i);
-            bytes.append(&mut varint_to_bytes(delta));
+            bytes.append(&mut VarInt::create_bytes(delta));
         }
         bytes
     }
@@ -191,10 +192,10 @@ impl O5mEncoder {
         let mut mem_bytes = self.rel_members_to_bytes(&rel.members);
 
         let mut bytes = Vec::new();
-        bytes.append(&mut varint_to_bytes(delta_id));
-        bytes.append(&mut uvarint_to_bytes(rel.meta.version as u64));
+        bytes.append(&mut VarInt::create_bytes(delta_id));
+        bytes.append(&mut VarInt::create_bytes(rel.meta.version));
         bytes.push(0x00); // Timestamp
-        bytes.append(&mut uvarint_to_bytes(mem_bytes.len() as u64));
+        bytes.append(&mut VarInt::create_bytes(mem_bytes.len() as u64));
         bytes.append(&mut mem_bytes);
 
         for tag in &rel.meta.tags {
@@ -212,7 +213,7 @@ impl O5mEncoder {
             let mem_role = m.role();
             let delta = self.delta_rel_member(m);
 
-            bytes.append(&mut varint_to_bytes(delta));
+            bytes.append(&mut VarInt::create_bytes(delta));
             bytes.push(0x00);
             for b in mem_type.bytes() {
                 bytes.push(b);
@@ -259,7 +260,7 @@ impl O5mEncoder {
     /// TODO the 15000 limit
     fn string_reference_table(&mut self, bytes: Vec<u8>) -> Vec<u8> {
         if let Some(pos) = self.string_table.iter().position(|b| b == &bytes) {
-            uvarint_to_bytes(1 + pos as u64)
+            VarInt::create_bytes(1 + pos as u64)
         } else {
             self.string_table.push_front(bytes.clone());
             bytes
@@ -271,7 +272,7 @@ impl O5mEncoder {
     fn user_to_bytes(&mut self, uid: u64, username: &str) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.push(0);
-        bytes.append(&mut uvarint_to_bytes(uid));
+        bytes.append(&mut VarInt::create_bytes(uid));
 
         bytes.push(0);
         for byte in username.bytes() {
@@ -308,105 +309,10 @@ fn member_type(member: &RelationMember) -> &str {
     }
 }
 
-/// Uvarint uses the most significant bit of every byte to determine if there is more bytes
-/// remaining.
-/// See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
-pub fn uvarint_to_bytes(mut value: u64) -> Vec<u8> {
-    let mut bytes = Vec::new();
-
-    while value > 0x7F {
-        bytes.push(((value & 0x7F) | 0x80) as u8);
-        value >>= 7;
-    }
-
-    if value > 0 {
-        bytes.push(value as u8);
-    }
-
-    bytes
-}
-
-/// Varint is same as uvarint, but it also uses the least significant bit of the least significant
-/// byte to determine if the number is negative or not.
-/// See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
-pub fn varint_to_bytes(mut value: i64) -> Vec<u8> {
-    let mut sign_bit = 0x00;
-    if value < 0 {
-        sign_bit = 0x01;
-
-        // We handle the sign our selves, negative range is shifted by 1.
-        value = -value - 1;
-    }
-
-    let value = value as u64;
-    let least_significant = (((value << 1) & 0x7F) | sign_bit) as u8;
-
-    let mut bytes = Vec::new();
-    // We can only fit 6 bits in first byte since we use 1 bit for sign and 1 for length.
-    if value > 0x3F {
-        bytes.push(least_significant | 0x80);
-
-        // Only first byte is special, rest is same as uvarint.
-        let mut rest = uvarint_to_bytes(value >> 6);
-        bytes.append(&mut rest);
-    } else {
-        bytes.push(least_significant);
-    }
-    bytes
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{Meta, Relation, RelationMember, Way};
-
-    #[test]
-    fn one_byte_uvarint() {
-        let bytes = uvarint_to_bytes(5);
-        assert_eq!(bytes, vec![0x05]);
-    }
-
-    #[test]
-    fn max_one_byte_uvarint() {
-        let bytes = uvarint_to_bytes(127);
-        assert_eq!(bytes, vec![0x7F]);
-    }
-
-    #[test]
-    fn two_byte_uvarint() {
-        let bytes = uvarint_to_bytes(323);
-        assert_eq!(bytes, vec![0xC3, 0x02]);
-    }
-
-    #[test]
-    fn three_byte_uvarint() {
-        let bytes = uvarint_to_bytes(16384);
-        assert_eq!(bytes, vec![0x80, 0x80, 0x01]);
-    }
-
-    #[test]
-    fn one_byte_positive_varint() {
-        let bytes = varint_to_bytes(4);
-        assert_eq!(bytes, vec![0x08]);
-    }
-
-    #[test]
-    fn one_byte_negative_varint() {
-        let bytes = varint_to_bytes(-3);
-        assert_eq!(bytes, vec![0x05]);
-    }
-
-    #[test]
-    fn two_byte_positive_varint() {
-        let bytes = varint_to_bytes(64);
-        assert_eq!(bytes, vec![0x80, 0x01]);
-    }
-
-    #[test]
-    fn two_byte_negative_varint() {
-        let bytes = varint_to_bytes(-65);
-        assert_eq!(bytes, vec![0x81, 0x01]);
-    }
 
     #[test]
     fn string_pair_bytes() {
