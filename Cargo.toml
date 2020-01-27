@@ -10,6 +10,11 @@ repository = "https://github.com/FelixStridsberg/vadeen_osm"
 description = "IO and builder library for Open Street Map data."
 readme = "README.md"
 
+exclude = ["/.travis.yml"]
+
+[badges]
+travis-ci = { repository = "FelixStridsberg/vadeen_osm" }
+
 [dependencies]
 chrono = "0.4"
 quick-xml = "0.17"
