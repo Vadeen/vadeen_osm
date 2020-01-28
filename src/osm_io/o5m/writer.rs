@@ -4,11 +4,11 @@ use std::io::Write;
 use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::ErrorKind;
+use crate::osm_io::o5m::varint::VarInt;
 use crate::osm_io::o5m::Delta::{Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, WayRef};
 use crate::osm_io::OsmWriter;
 use crate::{Node, Osm, Relation, RelationMember, Way};
 use std::collections::VecDeque;
-use crate::osm_io::o5m::varint::VarInt;
 
 /// Todo write user information etc...
 /// A writer for the o5m binary format.
@@ -256,13 +256,14 @@ impl O5mEncoder {
     /// in the table.
     /// At most 15000 strings may exist in the reference table, if more is added the oldest is
     /// removed.
-    ///
-    /// TODO the 15000 limit
     fn string_reference_table(&mut self, bytes: Vec<u8>) -> Vec<u8> {
         if let Some(pos) = self.string_table.iter().position(|b| b == &bytes) {
             VarInt::create_bytes(1 + pos as u64)
         } else {
             self.string_table.push_front(bytes.clone());
+            if self.string_table.len() > MAX_STRING_TABLE_SIZE {
+                self.string_table.pop_back();
+            }
             bytes
         }
     }

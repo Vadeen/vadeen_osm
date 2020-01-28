@@ -1,5 +1,5 @@
-use super::*;
 use super::varint::VarInt;
+use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Result;
 use crate::osm_io::error::{Error, ErrorKind};
@@ -18,7 +18,7 @@ pub struct O5mReader<R: BufRead> {
 /// Keeps state of string references and delta values.
 struct O5mDecoder<R: BufRead> {
     inner: Take<R>,
-    string_table: VecDeque<Vec<u8>>, // TODO limit size
+    string_table: VecDeque<Vec<u8>>,
     delta: DeltaState,
 }
 
@@ -350,6 +350,10 @@ impl<R: BufRead> O5mDecoder<R> {
         }
 
         self.string_table.push_front(data.clone());
+        if self.string_table.len() > MAX_STRING_TABLE_SIZE {
+            self.string_table.pop_back();
+        }
+
         Ok(data)
     }
 

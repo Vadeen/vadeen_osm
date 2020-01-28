@@ -9,6 +9,8 @@ pub use reader::*;
 use std::fmt::Debug;
 pub use writer::*;
 
+const MAX_STRING_TABLE_SIZE: usize = 15_000;
+
 const O5M_HEADER_DATA: &[u8] = &[0x04, 0x6f, 0x35, 0x6d, 0x32];
 const O5M_HEADER: u8 = 0xE0;
 const O5M_EOF: u8 = 0xFE;

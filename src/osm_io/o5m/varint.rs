@@ -14,8 +14,8 @@
 //!
 //! See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
 
-use std::io::Read;
 use crate::osm_io::error::Result;
+use std::io::Read;
 
 /// Represents a variable integer (signed or unsigned).
 pub struct VarInt {
@@ -24,9 +24,7 @@ pub struct VarInt {
 
 impl VarInt {
     pub fn new(bytes: Vec<u8>) -> Self {
-        VarInt {
-            bytes
-        }
+        VarInt { bytes }
     }
 
     /// Convenience function for creating a (u)varint and returning its bytes.
@@ -218,7 +216,6 @@ mod test_to_bytes {
         let varint = VarInt::from(5 as u64);
         assert_eq!(varint.bytes, vec![0x05]);
     }
-
 
     #[test]
     fn max_one_byte_uvarint() {
