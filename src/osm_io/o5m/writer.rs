@@ -8,7 +8,6 @@ use crate::osm_io::o5m::varint::VarInt;
 use crate::osm_io::o5m::Delta::{Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, WayRef};
 use crate::osm_io::OsmWriter;
 use crate::{Node, Osm, Relation, RelationMember, Way};
-use std::collections::VecDeque;
 
 /// Todo write user information etc...
 /// A writer for the o5m binary format.
@@ -22,7 +21,7 @@ pub struct O5mWriter<W> {
 /// delta values.
 #[derive(Debug)]
 struct O5mEncoder {
-    string_table: VecDeque<Vec<u8>>,
+    string_table: StringReferenceTable,
     delta: DeltaState,
 }
 
@@ -124,7 +123,7 @@ impl<W: Write> OsmWriter<W> for O5mWriter<W> {
 impl O5mEncoder {
     pub fn new() -> Self {
         O5mEncoder {
-            string_table: VecDeque::new(),
+            string_table: StringReferenceTable::new(),
             delta: DeltaState::new(),
         }
     }
@@ -229,8 +228,6 @@ impl O5mEncoder {
     /// Converts a string pair into a byte vector that can be written to file.
     /// If the string has appeared previously after the last reset a reference is returned.
     ///
-    /// Only string pairs of at most 250 characters can be references as per spec.
-    ///
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Strings
     fn string_pair_to_bytes(&mut self, key: &str, value: &str) -> Vec<u8> {
         let mut bytes = Vec::new();
@@ -245,27 +242,7 @@ impl O5mEncoder {
         }
         bytes.push(0x00);
 
-        if key.len() + value.len() > 250 {
-            bytes
-        } else {
-            self.string_reference_table(bytes)
-        }
-    }
-
-    /// Looks up bytes from a string in a table. Returns a reference if the bytes already exists
-    /// in the table.
-    /// At most 15000 strings may exist in the reference table, if more is added the oldest is
-    /// removed.
-    fn string_reference_table(&mut self, bytes: Vec<u8>) -> Vec<u8> {
-        if let Some(pos) = self.string_table.iter().position(|b| b == &bytes) {
-            VarInt::create_bytes(1 + pos as u64)
-        } else {
-            self.string_table.push_front(bytes.clone());
-            if self.string_table.len() > MAX_STRING_TABLE_SIZE {
-                self.string_table.pop_back();
-            }
-            bytes
-        }
+        self.string_table.reference(bytes)
     }
 
     /// Converts a user to a byte vector that can be written to file.
@@ -281,7 +258,7 @@ impl O5mEncoder {
         }
         bytes.push(0);
 
-        self.string_reference_table(bytes)
+        self.string_table.reference(bytes)
     }
 
     /// Relation members have delta split on the relation type.

@@ -5,11 +5,14 @@ mod reader;
 mod varint;
 mod writer;
 
+use crate::osm_io::o5m::varint::VarInt;
 pub use reader::*;
+use std::collections::VecDeque;
 use std::fmt::Debug;
 pub use writer::*;
 
 const MAX_STRING_TABLE_SIZE: usize = 15_000;
+const MAX_STRING_REFERENCE_LENGTH: usize = 250;
 
 const O5M_HEADER_DATA: &[u8] = &[0x04, 0x6f, 0x35, 0x6d, 0x32];
 const O5M_HEADER: u8 = 0xE0;
@@ -19,6 +22,13 @@ const O5M_NODE: u8 = 0x10;
 const O5M_WAY: u8 = 0x11;
 const O5M_RELATION: u8 = 0x12;
 const O5M_BOUNDING_BOX: u8 = 0xDB;
+
+/// String reference table is used for decoding and encoding strings as references.
+/// See: https://wiki.openstreetmap.org/wiki/O5m#Strings
+#[derive(Debug)]
+struct StringReferenceTable {
+    table: VecDeque<Vec<u8>>,
+}
 
 /// Represents a delta value, i.e. a value that is relative to it's last value.
 #[derive(Debug)]
@@ -50,6 +60,52 @@ struct DeltaState {
     rel_node_ref: DeltaValue,
     rel_way_ref: DeltaValue,
     rel_rel_ref: DeltaValue,
+}
+
+impl StringReferenceTable {
+    pub fn new() -> Self {
+        StringReferenceTable {
+            table: VecDeque::with_capacity(15000),
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.table.clear();
+    }
+
+    /// Get string from table. idx starts at 1.
+    pub fn get(&mut self, idx: u64) -> Option<&Vec<u8>> {
+        self.table.get((idx - 1) as usize)
+    }
+
+    /// Get string reference. If string is present bytes representing a string reference will be
+    /// returned. If not the string will be pushed to the table and returned untouched.
+    fn reference(&mut self, bytes: Vec<u8>) -> Vec<u8> {
+        if bytes.len() > MAX_STRING_REFERENCE_LENGTH {
+            return bytes;
+        }
+
+        if let Some(pos) = self.table.iter().position(|b| b == &bytes) {
+            VarInt::create_bytes((pos + 1) as u64)
+        } else {
+            self.push(&bytes);
+            bytes
+        }
+    }
+
+    /// Push string to table. The string is only added if it do not exceed 250 bytes in length.
+    pub fn push(&mut self, bytes: &[u8]) {
+        if bytes.len() > MAX_STRING_REFERENCE_LENGTH {
+            return;
+        }
+
+        // Pop the oldest one off if we are at the limit.
+        if self.table.len() == MAX_STRING_TABLE_SIZE {
+            self.table.pop_back();
+        }
+
+        self.table.push_front(bytes.to_vec());
+    }
 }
 
 impl DeltaValue {
@@ -108,5 +164,27 @@ impl DeltaState {
             Delta::RelWayRef => &mut self.rel_way_ref,
             Delta::RelRelRef => &mut self.rel_rel_ref,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::osm_io::o5m::varint::VarInt;
+    use crate::osm_io::o5m::StringReferenceTable;
+
+    #[test]
+    fn string_references() {
+        let mut table = StringReferenceTable::new();
+        assert_eq!(table.reference(vec![0x01, 0x01]), vec![0x01, 0x01]); // New
+        assert_eq!(table.reference(vec![0x02, 0x02]), vec![0x02, 0x02]); // New
+        assert_eq!(table.reference(vec![0x01, 0x01]), vec![0x02]); // Existing
+        assert_eq!(table.reference(vec![0x03, 0x03]), vec![0x03, 0x03]); // New
+        assert_eq!(table.reference(vec![0x01, 0x01]), vec![0x03]); // Existing
+        assert_eq!(table.reference(vec![0x02, 0x02]), vec![0x02]); // Existing
+        assert_eq!(table.reference(vec![0x03, 0x03]), vec![0x01]); // Existing
+
+        table.clear();
+
+        assert_eq!(table.reference(vec![0x01, 0x01]), vec![0x01, 0x01]); // New
     }
 }

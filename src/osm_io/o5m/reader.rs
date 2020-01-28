@@ -6,7 +6,6 @@ use crate::osm_io::error::{Error, ErrorKind};
 use crate::osm_io::o5m::Delta::*;
 use crate::osm_io::OsmReader;
 use crate::{AuthorInformation, Meta, Node, Osm, Relation, RelationMember, Tag, Way};
-use std::collections::VecDeque;
 use std::io::{BufRead, Read, Take};
 
 /// A reader for the o5m format.
@@ -18,7 +17,7 @@ pub struct O5mReader<R: BufRead> {
 /// Keeps state of string references and delta values.
 struct O5mDecoder<R: BufRead> {
     inner: Take<R>,
-    string_table: VecDeque<Vec<u8>>,
+    string_table: StringReferenceTable,
     delta: DeltaState,
 }
 
@@ -147,7 +146,7 @@ impl<R: BufRead> O5mDecoder<R> {
     fn new(inner: R) -> Self {
         O5mDecoder {
             inner: inner.take(0),
-            string_table: VecDeque::new(),
+            string_table: StringReferenceTable::new(),
             delta: DeltaState::new(),
         }
     }
@@ -221,7 +220,8 @@ impl<R: BufRead> O5mDecoder<R> {
     fn read_user(&mut self) -> Result<(u64, String)> {
         let reference = self.read_uvarint()?;
         if reference != 0 {
-            let bytes = self.string_table.get((reference - 1) as usize).unwrap();
+            // TODO error handle
+            let bytes = self.string_table.get(reference).unwrap();
             Ok(Self::bytes_to_user(bytes))
         } else {
             let bytes = self.read_string_bytes(2)?;
@@ -291,7 +291,7 @@ impl<R: BufRead> O5mDecoder<R> {
     fn read_string_pair(&mut self) -> Result<(String, String)> {
         let reference = VarInt::read(&mut self.inner)?.into_u64();
         if reference != 0 {
-            if let Some(bytes) = self.string_table.get((reference - 1) as usize) {
+            if let Some(bytes) = self.string_table.get(reference) {
                 Ok(Self::bytes_to_string_pair(bytes))
             } else {
                 Ok(("?".to_owned(), "?".to_owned()))
@@ -310,7 +310,7 @@ impl<R: BufRead> O5mDecoder<R> {
             String::from_utf8_lossy(&value).into_owned()
         } else {
             // TODO error handling
-            let value = self.string_table.get((reference - 1) as usize).unwrap();
+            let value = self.string_table.get(reference).unwrap();
             String::from_utf8_lossy(&value).into_owned()
         };
 
@@ -349,11 +349,7 @@ impl<R: BufRead> O5mDecoder<R> {
             data.push(b);
         }
 
-        self.string_table.push_front(data.clone());
-        if self.string_table.len() > MAX_STRING_TABLE_SIZE {
-            self.string_table.pop_back();
-        }
-
+        self.string_table.push(&data);
         Ok(data)
     }
 
