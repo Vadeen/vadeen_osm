@@ -46,13 +46,12 @@ pub struct Tag {
     pub value: String,
 }
 
-// TODO timestamp
 /// Common meta data used by multiple entities.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Meta {
     pub tags: Vec<Tag>,
     pub version: Option<u32>,
-    pub created: Option<TimeStamp>,
+    pub created: Option<TimeStamp>, // TODO Move timestamp into authorinformation non optional.
     pub author: Option<AuthorInformation>,
 }
 

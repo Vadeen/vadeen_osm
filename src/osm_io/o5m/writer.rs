@@ -5,11 +5,12 @@ use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::ErrorKind;
 use crate::osm_io::o5m::varint::VarInt;
-use crate::osm_io::o5m::Delta::{Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, WayRef};
+use crate::osm_io::o5m::Delta::{
+    ChangeSet, Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, Time, WayRef,
+};
 use crate::osm_io::OsmWriter;
 use crate::{Meta, Node, Osm, Relation, RelationMember, Way};
 
-/// Todo write user information etc...
 /// A writer for the o5m binary format.
 #[derive(Debug)]
 pub struct O5mWriter<W> {
@@ -222,15 +223,26 @@ impl O5mEncoder {
         bytes
     }
 
-    /// Converts meta to bytes. It's position directly after the id of the element.
+    /// Converts meta to bytes. It's positioned directly after the id of the element.
     pub fn meta_to_bytes(&mut self, meta: &Meta) -> Vec<u8> {
         let mut bytes = Vec::new();
         if let Some(version) = meta.version {
             bytes.append(&mut VarInt::create_bytes(version));
-            bytes.push(0x00); // TODO timestamp
-                              // TODO user
+
+            if let Some(time) = meta.created {
+                let author = meta.author.as_ref().unwrap();
+                let delta_time = self.delta.encode(Time, time);
+                let delta_change_set = self.delta.encode(ChangeSet, author.change_set as i64);
+                let mut user_bytes = self.user_to_bytes(author.uid, &author.user);
+
+                bytes.append(&mut VarInt::create_bytes(delta_time));
+                bytes.append(&mut VarInt::create_bytes(delta_change_set));
+                bytes.append(&mut user_bytes);
+            } else {
+                bytes.push(0x00); // No author info.
+            }
         } else {
-            bytes.push(0x00); // No version, no timestamp and no author.
+            bytes.push(0x00); // No version, no timestamp and no author info.
         }
         bytes
     }
@@ -300,7 +312,7 @@ fn member_type(member: &RelationMember) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Meta, Relation, RelationMember, Way};
+    use crate::{AuthorInformation, Meta, Relation, RelationMember, Way};
 
     #[test]
     fn string_pair_bytes() {
@@ -337,10 +349,13 @@ mod tests {
     fn write_node() {
         let expected: Vec<u8> = vec![
             0x10, // Node type
-            0x13, // Length
+            0x26, // Length
             0x80, 0x01, // Id, delta
             0x01, // Version
-            0x00, // Timestamp
+            0xe4, 0x8e, 0xa7, 0xca, 0x09, // Timestamp
+            0x94, 0xfe, 0xd2, 0x05, // Changeset
+            0x00, 0x85, 0xe3, 0x02, 0x00, // Uid
+            0x55, 0x53, 0x63, 0x68, 0x61, 0x00, // User
             0x08, // Lon, delta
             0x81, 0x01, // Lat, delta
             // oneway=yes
@@ -353,6 +368,12 @@ mod tests {
             meta: Meta {
                 tags: vec![("oneway", "yes").into()],
                 version: Some(1),
+                created: Some(1285874610),
+                author: Some(AuthorInformation {
+                    change_set: 5922698,
+                    uid: 45445,
+                    user: "UScha".to_string(),
+                }),
                 ..Default::default()
             },
         };
