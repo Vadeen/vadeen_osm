@@ -111,7 +111,7 @@ impl Attributes {
         };
 
         Ok(Meta {
-            version: self.get_parse("version")?,
+            version: Some(self.get_parse("version")?),
             tags: vec![],
             author,
         })
@@ -343,7 +343,7 @@ mod tests {
                 id: 25496583,
                 coordinate: Coordinate::new(51.5173639, -0.140043),
                 meta: Meta {
-                    version: 1,
+                    version: Some(1),
                     tags: vec![],
                     author: Some(AuthorInformation {
                         uid: 1238,
@@ -434,7 +434,7 @@ mod tests {
                 id: 5090250,
                 refs: vec![822403, 21533912, 821601],
                 meta: Meta {
-                    version: 1,
+                    version: Some(1),
                     tags: vec![("highway", "residential").into(), ("oneway", "yes").into()],
                     author: Some(AuthorInformation {
                         uid: 1238,
@@ -505,7 +505,7 @@ mod tests {
                     RelationMember::Relation(821603, "outer".to_owned()),
                 ],
                 meta: Meta {
-                    version: 28,
+                    version: Some(28),
                     tags: vec![("route", "bus").into(), ("ref", "123").into()],
                     author: Some(AuthorInformation {
                         uid: 1238,

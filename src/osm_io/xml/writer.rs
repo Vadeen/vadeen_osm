@@ -215,7 +215,7 @@ fn add_meta_attributes(elem: &mut BytesStart, meta: &Meta) {
     }
 
     let version = meta.version;
-    elem.push_attribute(("version", version.to_string().as_ref()));
+    elem.push_attribute(("version", version.unwrap_or(1).to_string().as_ref()));
 }
 
 #[cfg(test)]
@@ -263,7 +263,7 @@ mod tests {
                 coordinate: (65.12, 55.21).into(),
                 meta: Meta {
                     tags: vec![],
-                    version: 1,
+                    version: None,
                     author: Some(AuthorInformation {
                         change_set: 1234,
                         uid: 4321,
@@ -293,7 +293,7 @@ mod tests {
                         ("name", "Neu Broderstorf").into(),
                         ("traffic_sign", "city_limit").into(),
                     ],
-                    version: 1,
+                    version: Some(1),
                     author: Some(AuthorInformation {
                         change_set: 1234,
                         uid: 4321,
@@ -326,7 +326,7 @@ mod tests {
                         ("highway", "unclassified").into(),
                         ("name", "Pastower Straße").into(),
                     ],
-                    version: 2,
+                    version: Some(2),
                     author: Some(AuthorInformation {
                         change_set: 12,
                         uid: 222,
@@ -365,7 +365,7 @@ mod tests {
                         ("highway", "unclassified").into(),
                         ("name", "Pastower Straße").into(),
                     ],
-                    version: 2,
+                    version: Some(2),
                     author: Some(AuthorInformation {
                         change_set: 12,
                         uid: 222,

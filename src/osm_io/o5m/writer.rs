@@ -7,7 +7,7 @@ use crate::osm_io::error::ErrorKind;
 use crate::osm_io::o5m::varint::VarInt;
 use crate::osm_io::o5m::Delta::{Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, WayRef};
 use crate::osm_io::OsmWriter;
-use crate::{Node, Osm, Relation, RelationMember, Way};
+use crate::{Meta, Node, Osm, Relation, RelationMember, Way};
 
 /// Todo write user information etc...
 /// A writer for the o5m binary format.
@@ -142,8 +142,7 @@ impl O5mEncoder {
 
         let mut bytes = Vec::new();
         bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut VarInt::create_bytes(node.meta.version));
-        bytes.push(0x00); // Timestamp
+        bytes.append(&mut self.meta_to_bytes(&node.meta));
         bytes.append(&mut VarInt::create_bytes(delta_coordinate.lon));
         bytes.append(&mut VarInt::create_bytes(delta_coordinate.lat));
 
@@ -162,8 +161,7 @@ impl O5mEncoder {
 
         let mut bytes = Vec::new();
         bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut VarInt::create_bytes(way.meta.version));
-        bytes.push(0x00); // Timestamp
+        bytes.append(&mut self.meta_to_bytes(&way.meta));
         bytes.append(&mut VarInt::create_bytes(ref_bytes.len() as u64));
         bytes.append(&mut ref_bytes);
 
@@ -192,8 +190,7 @@ impl O5mEncoder {
 
         let mut bytes = Vec::new();
         bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut VarInt::create_bytes(rel.meta.version));
-        bytes.push(0x00); // Timestamp
+        bytes.append(&mut self.meta_to_bytes(&rel.meta));
         bytes.append(&mut VarInt::create_bytes(mem_bytes.len() as u64));
         bytes.append(&mut mem_bytes);
 
@@ -221,6 +218,19 @@ impl O5mEncoder {
                 bytes.push(b);
             }
             bytes.push(0x00);
+        }
+        bytes
+    }
+
+    /// Converts meta to bytes. It's position directly after the id of the element.
+    pub fn meta_to_bytes(&mut self, meta: &Meta) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        if let Some(version) = meta.version {
+            bytes.append(&mut VarInt::create_bytes(version));
+            bytes.push(0x00); // TODO timestamp
+                              // TODO user
+        } else {
+            bytes.push(0x00); // No version, no timestamp and no author.
         }
         bytes
     }
@@ -342,6 +352,7 @@ mod tests {
             coordinate: Coordinate { lat: -65, lon: 4 },
             meta: Meta {
                 tags: vec![("oneway", "yes").into()],
+                version: Some(1),
                 ..Default::default()
             },
         };
@@ -372,6 +383,7 @@ mod tests {
             refs: vec![64, 65],
             meta: Meta {
                 tags: vec![("highway", "secondary").into()],
+                version: Some(1),
                 ..Default::default()
             },
         };
@@ -385,10 +397,9 @@ mod tests {
     fn relation_bytes() {
         let expected: Vec<u8> = vec![
             0x12, // Relation type
-            0x2A, // Length
+            0x29, // Length
             0x80, 0x01, // Id, delta
-            0x01, // Version
-            0x00, // Timestamp
+            0x00, // Version
             0x12, // Length of ref section
             0x08, // Ref id, delta
             0x00, 0x31, // Way

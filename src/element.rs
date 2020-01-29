@@ -50,7 +50,7 @@ pub struct Tag {
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Meta {
     pub tags: Vec<Tag>,
-    pub version: u32,
+    pub version: Option<u32>,
     pub author: Option<AuthorInformation>,
 }
 
@@ -140,7 +140,7 @@ impl Default for Meta {
     fn default() -> Self {
         Meta {
             tags: vec![],
-            version: 1,
+            version: None,
             author: None,
         }
     }

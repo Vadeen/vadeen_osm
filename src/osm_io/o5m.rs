@@ -169,7 +169,6 @@ impl DeltaState {
 
 #[cfg(test)]
 mod test {
-    use crate::osm_io::o5m::varint::VarInt;
     use crate::osm_io::o5m::StringReferenceTable;
 
     #[test]

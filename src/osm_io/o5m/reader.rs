@@ -126,10 +126,11 @@ impl<R: BufRead> O5mReader<R> {
     /// Meta is common data part of every element.
     fn read_meta(&mut self) -> Result<Meta> {
         let mut meta = Meta::default();
-        meta.version = self.decoder.read_uvarint()? as u32;
+        let version = self.decoder.read_uvarint()? as u32;
+        meta.version = if version == 0 { None } else { Some(version) };
 
         // If version is 0 there is no timestamp or author.
-        if meta.version != 0 {
+        if meta.version.is_some() {
             let timestamp = self.decoder.read_delta(Time)?;
 
             // If timestamp is 0, there is no author.
@@ -432,7 +433,7 @@ mod test {
                 coordinate: Coordinate::new(53.0749606, 8.7867843),
                 meta: Meta {
                     tags: vec![],
-                    version: 5,
+                    version: Some(5),
                     author: Some(AuthorInformation {
                         change_set: 5922698,
                         uid: 45445,
@@ -468,7 +469,7 @@ mod test {
                 refs: vec![20958823, 20973902],
                 meta: Meta {
                     tags: vec![("highway", "secondary").into()],
-                    version: 0,
+                    version: None,
                     author: None
                 }
             }
@@ -508,7 +509,7 @@ mod test {
                 ],
                 meta: Meta {
                     tags: vec![("type", "multipolygon").into()],
-                    version: 0,
+                    version: None,
                     author: None
                 }
             }

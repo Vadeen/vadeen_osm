@@ -28,7 +28,7 @@ fn read_o5m_file() {
         assert_eq!(node.meta.tags, []);
 
         let author = node.meta.author.as_ref().unwrap();
-        assert_eq!(3, node.meta.version);
+        assert_eq!(Some(3), node.meta.version);
         assert_eq!("Dalkvist", author.user);
         assert_eq!(12140, author.uid);
         assert_eq!(7035827, author.change_set);
@@ -49,7 +49,7 @@ fn read_o5m_file() {
         );
 
         let author = node.meta.author.as_ref().unwrap();
-        assert_eq!(5, node.meta.version);
+        assert_eq!(Some(5), node.meta.version);
         assert_eq!("Ice25T", author.user);
         assert_eq!(157205, author.uid);
         assert_eq!(63422528, author.change_set);
@@ -70,7 +70,7 @@ fn read_o5m_file() {
         );
 
         let author = way.meta.author.as_ref().unwrap();
-        assert_eq!(1, way.meta.version);
+        assert_eq!(Some(1), way.meta.version);
         assert_eq!(author.user, "maxugglan");
         assert_eq!(author.uid, 107681);
         assert_eq!(author.change_set, 8280205);
@@ -94,7 +94,7 @@ fn read_o5m_file() {
         );
 
         let author = rel.meta.author.as_ref().unwrap();
-        assert_eq!(2, rel.meta.version);
+        assert_eq!(Some(2), rel.meta.version);
         assert_eq!("AndersAndersson", author.user);
         assert_eq!(113813, author.uid);
         assert_eq!(11221181, author.change_set);
