@@ -469,8 +469,7 @@ mod test {
                 refs: vec![20958823, 20973902],
                 meta: Meta {
                     tags: vec![("highway", "secondary").into()],
-                    version: None,
-                    author: None
+                    ..Meta::default()
                 }
             }
         )
@@ -509,8 +508,7 @@ mod test {
                 ],
                 meta: Meta {
                     tags: vec![("type", "multipolygon").into()],
-                    version: None,
-                    author: None
+                    ..Meta::default()
                 }
             }
         )

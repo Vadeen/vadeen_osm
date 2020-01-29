@@ -269,6 +269,7 @@ mod tests {
                         uid: 4321,
                         user: "osm".to_owned(),
                     }),
+                    ..Meta::default()
                 },
             })
             .unwrap();
@@ -299,6 +300,7 @@ mod tests {
                         uid: 4321,
                         user: "osm".to_owned(),
                     }),
+                    ..Meta::default()
                 },
             })
             .unwrap();
@@ -332,6 +334,7 @@ mod tests {
                         uid: 222,
                         user: "mos".to_owned(),
                     }),
+                    ..Meta::default()
                 },
             })
             .unwrap();
@@ -371,6 +374,7 @@ mod tests {
                         uid: 222,
                         user: "mos".to_owned(),
                     }),
+                    ..Meta::default()
                 },
             })
             .unwrap();

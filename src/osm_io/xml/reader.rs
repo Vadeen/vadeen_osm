@@ -55,6 +55,13 @@ impl Attributes {
         <F as std::str::FromStr>::Err: std::fmt::Debug,
     {
         let s = self.get_required(field)?;
+        self.parse(field, s)
+    }
+    /// Get element (with get_required) and parse data into F.
+    fn parse<F: FromStr>(&self, field: &str, s: &str) -> Result<F>
+    where
+        <F as std::str::FromStr>::Err: std::fmt::Debug,
+    {
         str::parse(s).map_err(|_| {
             ErrorKind::InvalidData(format!(
                 "The '{}' attribute contains invalid data '{}'.",
@@ -110,10 +117,16 @@ impl Attributes {
             None
         };
 
+        let version = if let Some(version) = self.get("version") {
+            Some(self.parse("version", version)?)
+        } else {
+            None
+        };
+
         Ok(Meta {
-            version: Some(self.get_parse("version")?),
-            tags: vec![],
+            version,
             author,
+            ..Meta::default()
         })
     }
 
@@ -344,12 +357,12 @@ mod tests {
                 coordinate: Coordinate::new(51.5173639, -0.140043),
                 meta: Meta {
                     version: Some(1),
-                    tags: vec![],
                     author: Some(AuthorInformation {
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,
-                    })
+                    }),
+                    ..Meta::default()
                 }
             }
         );
@@ -384,12 +397,10 @@ mod tests {
         let missing_id = r#"<node lat="51.12" lon="22.14" version="1" />"#;
         let missing_lat = r#"<node id="1" lon="22.14" version="1" />"#;
         let missing_lon = r#"<node id="1" lat="51.12" version="1" />"#;
-        let missing_version = r#"<node id="1" lat="51.12" lon="22.14" />"#;
         let data = vec![
             ("id", missing_id),
             ("lat", missing_lat),
             ("lon", missing_lon),
-            ("version", missing_version),
         ];
 
         validate_missing_attributes(data);
@@ -440,7 +451,8 @@ mod tests {
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,
-                    })
+                    }),
+                    ..Meta::default()
                 }
             }
         );
@@ -449,13 +461,11 @@ mod tests {
     #[test]
     fn read_way_missing_required_attributes() {
         let missing_id = r#"<way version="1"></way>"#;
-        let missing_version = r#"<way id="1"></way>"#;
         let missing_nd_ref = r#"<way id="1" version="1"><nd/></way>"#;
         let missing_tag_k = r#"<way id="1" version="1"><tag v="value"/></way>"#;
         let missing_tag_v = r#"<way id="1" version="1"><tag k="key"/></way>"#;
         let data = vec![
             ("id", missing_id),
-            ("version", missing_version),
             ("ref", missing_nd_ref),
             ("k", missing_tag_k),
             ("v", missing_tag_v),
@@ -511,7 +521,8 @@ mod tests {
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,
-                    })
+                    }),
+                    ..Meta::default()
                 }
             }
         );
@@ -520,12 +531,10 @@ mod tests {
     #[test]
     fn read_relation_missing_required_attributes() {
         let missing_id = r#"<relation version="1"></relation>"#;
-        let missing_version = r#"<relation id="1"></relation>"#;
         let missing_mem_ref = r#"<relation id="1" version="1"><member type="way"/></relation>"#;
         let missing_mem_type = r#"<relation id="1" version="1"><member ref="22"/></relation>"#;
         let data = vec![
             ("id", missing_id),
-            ("version", missing_version),
             ("ref", missing_mem_ref),
             ("type", missing_mem_type),
         ];
