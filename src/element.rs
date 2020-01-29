@@ -51,7 +51,6 @@ pub struct Tag {
 pub struct Meta {
     pub tags: Vec<Tag>,
     pub version: Option<u32>,
-    pub created: Option<TimeStamp>, // TODO Move timestamp into authorinformation non optional.
     pub author: Option<AuthorInformation>,
 }
 
@@ -59,6 +58,7 @@ pub struct Meta {
 /// added. When working on non osm maps, this data is irrelevant.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct AuthorInformation {
+    pub created: TimeStamp,
     pub change_set: u64,
     pub uid: u64,
     pub user: String,
@@ -142,7 +142,6 @@ impl Default for Meta {
         Meta {
             tags: vec![],
             version: None,
-            created: None,
             author: None,
         }
     }

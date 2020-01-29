@@ -207,21 +207,18 @@ fn add_member_attributes(elem: &mut BytesStart, mem: &RelationMember) {
 
 /// Add the meta attributes to an element.
 fn add_meta_attributes(elem: &mut BytesStart, meta: &Meta) {
-    if let Some(user) = &meta.author {
-        elem.extend_attributes(vec![
-            ("uid", user.uid.to_string().as_ref()),
-            ("user", user.user.as_ref()),
-            ("changeset", user.change_set.to_string().as_ref()),
-        ]);
-    }
-
     let version = meta.version;
     elem.push_attribute(("version", version.unwrap_or(1).to_string().as_ref()));
 
-    if let Some(time) = meta.created {
-        let dt = Utc.timestamp(time, 0);
+    if let Some(author) = &meta.author {
+        let dt = Utc.timestamp(author.created, 0);
         let time_str = dt.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string();
-        elem.push_attribute(("timestamp", time_str.as_ref()));
+        elem.extend_attributes(vec![
+            ("uid", author.uid.to_string().as_ref()),
+            ("user", author.user.as_ref()),
+            ("changeset", author.change_set.to_string().as_ref()),
+            ("timestamp", time_str.as_ref()),
+        ]);
     }
 }
 
@@ -272,6 +269,7 @@ mod tests {
                     tags: vec![],
                     version: None,
                     author: Some(AuthorInformation {
+                        created: 1285874610,
                         change_set: 1234,
                         uid: 4321,
                         user: "osm".to_owned(),
@@ -284,8 +282,8 @@ mod tests {
         let xml = writer.writer.into_inner().into_inner();
         assert_eq!(
             String::from_utf8_lossy(&xml),
-            "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" uid=\"4321\" user=\"osm\" \
-             changeset=\"1234\" version=\"1\"/>\n"
+            "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" version=\"1\" uid=\"4321\" \
+                     user=\"osm\" changeset=\"1234\" timestamp=\"2010-09-30T19:23:30Z\"/>\n"
         );
     }
 
@@ -302,8 +300,8 @@ mod tests {
                         ("traffic_sign", "city_limit").into(),
                     ],
                     version: Some(1),
-                    created: Some(1577934245),
                     author: Some(AuthorInformation {
+                        created: 1577934245,
                         change_set: 1234,
                         uid: 4321,
                         user: "osm".to_owned(),
@@ -316,8 +314,8 @@ mod tests {
         let xml = writer.writer.into_inner().into_inner();
         assert_eq!(
             String::from_utf8_lossy(&xml),
-            "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" uid=\"4321\" user=\"osm\" \
-             changeset=\"1234\" version=\"1\" timestamp=\"2020-01-02T03:04:05Z\">\n\
+            "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" version=\"1\" uid=\"4321\" \
+                     user=\"osm\" changeset=\"1234\" timestamp=\"2020-01-02T03:04:05Z\">\n\
              \t\t<tag k=\"name\" v=\"Neu Broderstorf\"/>\n\
              \t\t<tag k=\"traffic_sign\" v=\"city_limit\"/>\n\
              \t</node>\n"
@@ -338,6 +336,7 @@ mod tests {
                     ],
                     version: Some(2),
                     author: Some(AuthorInformation {
+                        created: 1285874610,
                         change_set: 12,
                         uid: 222,
                         user: "mos".to_owned(),
@@ -350,7 +349,8 @@ mod tests {
         let xml = writer.writer.into_inner().into_inner();
         assert_eq!(
             String::from_utf8_lossy(&xml),
-            "\t<way id=\"47\" uid=\"222\" user=\"mos\" changeset=\"12\" version=\"2\">\n\
+            "\t<way id=\"47\" version=\"2\" uid=\"222\" user=\"mos\" changeset=\"12\" \
+                    timestamp=\"2010-09-30T19:23:30Z\">\n\
              \t\t<nd ref=\"44\"/>\n\
              \t\t<nd ref=\"45\"/>\n\
              \t\t<nd ref=\"46\"/>\n\
@@ -378,6 +378,7 @@ mod tests {
                     ],
                     version: Some(2),
                     author: Some(AuthorInformation {
+                        created: 1285874610,
                         change_set: 12,
                         uid: 222,
                         user: "mos".to_owned(),
@@ -390,7 +391,8 @@ mod tests {
         let xml = writer.writer.into_inner().into_inner();
         assert_eq!(
             String::from_utf8_lossy(&xml),
-            "\t<relation id=\"47\" uid=\"222\" user=\"mos\" changeset=\"12\" version=\"2\">\n\
+            "\t<relation id=\"47\" version=\"2\" uid=\"222\" user=\"mos\" changeset=\"12\" \
+                         timestamp=\"2010-09-30T19:23:30Z\">\n\
              \t\t<member type=\"node\" ref=\"44\" role=\"\"/>\n\
              \t\t<member type=\"way\" ref=\"45\" role=\"inner\"/>\n\
              \t\t<member type=\"relation\" ref=\"46\" role=\"role\"/>\n\

@@ -108,8 +108,9 @@ impl Attributes {
 
     /// Try to create a `Meta` from attribute values.
     fn create_meta(&self) -> Result<Meta> {
-        let author = if self.contains_all(vec!["uid", "user", "changeset"]) {
+        let author = if self.contains_all(vec!["timestamp", "uid", "user", "changeset"]) {
             Some(AuthorInformation {
+                created: self.get_timestamp()?,
                 uid: self.get_parse("uid")?,
                 user: self.get_required("user")?.to_owned(),
                 change_set: self.get_parse("changeset")?,
@@ -124,25 +125,23 @@ impl Attributes {
             None
         };
 
-        let created = if let Some(time_str) = self.get("timestamp") {
-            if let Ok(time) = time_str.parse::<DateTime<Utc>>() {
-                Some(time.timestamp())
-            } else {
-                return Err(ErrorKind::InvalidData(format!(
-                    "Invalid timestamp '{}'",
-                    time_str
-                )));
-            }
-        } else {
-            None
-        };
-
         Ok(Meta {
             version,
             author,
-            created,
             ..Meta::default()
         })
+    }
+
+    fn get_timestamp(&self) -> Result<i64> {
+        let time_str = self.get_required("timestamp")?;
+        if let Ok(time) = time_str.parse::<DateTime<Utc>>() {
+            Ok(time.timestamp())
+        } else {
+            return Err(ErrorKind::InvalidData(format!(
+                "Invalid timestamp '{}'",
+                time_str
+            )));
+        }
     }
 
     /// Try to create a `RelationMember` from attribute values.
@@ -356,7 +355,8 @@ mod tests {
     #[test]
     fn read_node() {
         let xml = r#"<node id="25496583" lat="51.5173639" lon="-0.140043" version="1"
-                           changeset="203496" user="80n" uid="1238" visible="true"/>"#;
+                           changeset="203496" user="80n" uid="1238" visible="true"
+                           timestamp="2007-01-28T11:40:26Z" />"#;
         let mut reader = XmlReader::new(xml.as_bytes());
         let osm = reader.read().unwrap();
 
@@ -372,6 +372,7 @@ mod tests {
                 meta: Meta {
                     version: Some(1),
                     author: Some(AuthorInformation {
+                        created: 1169984426,
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,
@@ -460,9 +461,9 @@ mod tests {
                 refs: vec![822403, 21533912, 821601],
                 meta: Meta {
                     version: Some(1),
-                    created: Some(1169984426),
                     tags: vec![("highway", "residential").into(), ("oneway", "yes").into()],
                     author: Some(AuthorInformation {
+                        created: 1169984426,
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,
@@ -531,9 +532,9 @@ mod tests {
                 ],
                 meta: Meta {
                     version: Some(28),
-                    created: Some(1235158826),
                     tags: vec![("route", "bus").into(), ("ref", "123").into()],
                     author: Some(AuthorInformation {
+                        created: 1235158826,
                         uid: 1238,
                         user: "80n".to_owned(),
                         change_set: 203496,

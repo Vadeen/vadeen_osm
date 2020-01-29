@@ -32,7 +32,7 @@ fn read_o5m_file() {
         assert_eq!("Dalkvist", author.user);
         assert_eq!(12140, author.uid);
         assert_eq!(7035827, author.change_set);
-        // TODO timestamp, 2011-01-20T22:59:23Z
+        assert_eq!(1295564363, author.created);
     }
 
     // Assert a node with tags.
@@ -53,7 +53,7 @@ fn read_o5m_file() {
         assert_eq!("Ice25T", author.user);
         assert_eq!(157205, author.uid);
         assert_eq!(63422528, author.change_set);
-        // TODO timestamp, 2018-10-11T14:38:11Z
+        assert_eq!(1539268691, author.created);
     }
 
     // Assert a way.
@@ -74,7 +74,7 @@ fn read_o5m_file() {
         assert_eq!(author.user, "maxugglan");
         assert_eq!(author.uid, 107681);
         assert_eq!(author.change_set, 8280205);
-        // TODO timestamp, 2011-05-29T12:00:57Z
+        assert_eq!(author.created, 1306670457);
     }
 
     // Assert a relation.
@@ -98,7 +98,7 @@ fn read_o5m_file() {
         assert_eq!("AndersAndersson", author.user);
         assert_eq!(113813, author.uid);
         assert_eq!(11221181, author.change_set);
-        // TODO timestamp, 2012-04-08T07:13:34Z
+        assert_eq!(1333869214, author.created);
     }
 }
 

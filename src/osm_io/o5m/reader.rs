@@ -131,12 +131,7 @@ impl<R: BufRead> O5mReader<R> {
 
         // If version is 0 there is no timestamp or author.
         if meta.version.is_some() {
-            let timestamp = self.decoder.read_delta(Time)?;
-
-            // If timestamp is 0, there is no author.
-            if timestamp != 0 {
-                meta.author = self.decoder.read_author()?
-            }
+            meta.author = self.decoder.read_author_info()?;
         }
 
         Ok(meta)
@@ -206,10 +201,18 @@ impl<R: BufRead> O5mDecoder<R> {
     }
 
     /// Read author information. Uid, user and change set.
-    fn read_author(&mut self) -> Result<Option<AuthorInformation>> {
+    fn read_author_info(&mut self) -> Result<Option<AuthorInformation>> {
+        let created = self.read_delta(Time)?;
+
+        // If there is no time, there is no author information.
+        if created == 0 {
+            return Ok(None);
+        }
+
         let change_set = self.read_delta(ChangeSet)? as u64;
         let (uid, user) = self.read_user()?;
         Ok(Some(AuthorInformation {
+            created,
             change_set,
             uid,
             user,
@@ -435,6 +438,7 @@ mod test {
                     tags: vec![],
                     version: Some(5),
                     author: Some(AuthorInformation {
+                        created: 1285874610,
                         change_set: 5922698,
                         uid: 45445,
                         user: "UScha".to_string()

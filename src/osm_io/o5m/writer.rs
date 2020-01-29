@@ -229,15 +229,13 @@ impl O5mEncoder {
         if let Some(version) = meta.version {
             bytes.append(&mut VarInt::create_bytes(version));
 
-            if let Some(time) = meta.created {
-                let author = meta.author.as_ref().unwrap();
-                let delta_time = self.delta.encode(Time, time);
+            if let Some(author) = meta.author.as_ref() {
+                let delta_time = self.delta.encode(Time, author.created);
                 let delta_change_set = self.delta.encode(ChangeSet, author.change_set as i64);
-                let mut user_bytes = self.user_to_bytes(author.uid, &author.user);
 
                 bytes.append(&mut VarInt::create_bytes(delta_time));
                 bytes.append(&mut VarInt::create_bytes(delta_change_set));
-                bytes.append(&mut user_bytes);
+                bytes.append(&mut self.user_to_bytes(author.uid, &author.user));
             } else {
                 bytes.push(0x00); // No author info.
             }
@@ -368,8 +366,8 @@ mod tests {
             meta: Meta {
                 tags: vec![("oneway", "yes").into()],
                 version: Some(1),
-                created: Some(1285874610),
                 author: Some(AuthorInformation {
+                    created: 1285874610,
                     change_set: 5922698,
                     uid: 45445,
                     user: "UScha".to_string(),
