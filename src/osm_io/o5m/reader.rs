@@ -438,7 +438,8 @@ mod test {
                         change_set: 5922698,
                         uid: 45445,
                         user: "UScha".to_string()
-                    })
+                    }),
+                    ..Meta::default()
                 }
             }
         );

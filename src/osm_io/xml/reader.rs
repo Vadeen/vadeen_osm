@@ -1,3 +1,4 @@
+use super::super::chrono::{DateTime, Utc};
 use super::quick_xml::Reader;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::{Error, ErrorKind, Result};
@@ -123,9 +124,23 @@ impl Attributes {
             None
         };
 
+        let created = if let Some(time_str) = self.get("timestamp") {
+            if let Ok(time) = time_str.parse::<DateTime<Utc>>() {
+                Some(time.timestamp())
+            } else {
+                return Err(ErrorKind::InvalidData(format!(
+                    "Invalid timestamp '{}'",
+                    time_str
+                )));
+            }
+        } else {
+            None
+        };
+
         Ok(Meta {
             version,
             author,
+            created,
             ..Meta::default()
         })
     }
@@ -341,8 +356,7 @@ mod tests {
     #[test]
     fn read_node() {
         let xml = r#"<node id="25496583" lat="51.5173639" lon="-0.140043" version="1"
-                           changeset="203496" user="80n" uid="1238" visible="true"
-                           timestamp="2007-01-28T11:40:26Z"/>"#;
+                           changeset="203496" user="80n" uid="1238" visible="true"/>"#;
         let mut reader = XmlReader::new(xml.as_bytes());
         let osm = reader.read().unwrap();
 
@@ -446,6 +460,7 @@ mod tests {
                 refs: vec![822403, 21533912, 821601],
                 meta: Meta {
                     version: Some(1),
+                    created: Some(1169984426),
                     tags: vec![("highway", "residential").into(), ("oneway", "yes").into()],
                     author: Some(AuthorInformation {
                         uid: 1238,
@@ -491,7 +506,7 @@ mod tests {
     #[test]
     fn read_relation() {
         let xml = r#"<relation id="56688" version="28" changeset="203496" user="80n" uid="1238"
-                           visible="true" timestamp="2007-01-28T11:40:26Z">
+                           visible="true" timestamp="2009-02-20T19:40:26Z">
                          <member type="node" ref="821601"/>
                          <member type="way" ref="821602" role=""/>
                          <member type="rel" ref="821603" role="outer"/>
@@ -516,6 +531,7 @@ mod tests {
                 ],
                 meta: Meta {
                     version: Some(28),
+                    created: Some(1235158826),
                     tags: vec![("route", "bus").into(), ("ref", "123").into()],
                     author: Some(AuthorInformation {
                         uid: 1238,

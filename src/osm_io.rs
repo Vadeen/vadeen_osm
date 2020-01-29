@@ -35,6 +35,8 @@
 //! [`create_writer`]: fn.create_writer.html
 //! [`FileFormat`]: enum.FileFormat.html
 //! [`error`]: error/index.html
+extern crate chrono;
+
 pub mod error;
 mod o5m;
 mod xml;

@@ -5,6 +5,7 @@
 use crate::geo::Coordinate;
 
 type RelationRole = String;
+type TimeStamp = i64;
 
 /// A coordinate with meta data. See OSM docs for [`Node`].
 ///
@@ -51,6 +52,7 @@ pub struct Tag {
 pub struct Meta {
     pub tags: Vec<Tag>,
     pub version: Option<u32>,
+    pub created: Option<TimeStamp>,
     pub author: Option<AuthorInformation>,
 }
 
@@ -141,6 +143,7 @@ impl Default for Meta {
         Meta {
             tags: vec![],
             version: None,
+            created: None,
             author: None,
         }
     }

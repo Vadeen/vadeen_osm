@@ -1,3 +1,4 @@
+use super::super::chrono::{TimeZone, Utc};
 use super::quick_xml::events::{BytesDecl, BytesEnd, BytesStart, Event};
 use super::quick_xml::Writer;
 use crate::geo::Boundary;
@@ -216,6 +217,12 @@ fn add_meta_attributes(elem: &mut BytesStart, meta: &Meta) {
 
     let version = meta.version;
     elem.push_attribute(("version", version.unwrap_or(1).to_string().as_ref()));
+
+    if let Some(time) = meta.created {
+        let dt = Utc.timestamp(time, 0);
+        let time_str = dt.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string();
+        elem.push_attribute(("timestamp", time_str.as_ref()));
+    }
 }
 
 #[cfg(test)]
@@ -295,6 +302,7 @@ mod tests {
                         ("traffic_sign", "city_limit").into(),
                     ],
                     version: Some(1),
+                    created: Some(1577934245),
                     author: Some(AuthorInformation {
                         change_set: 1234,
                         uid: 4321,
@@ -309,7 +317,7 @@ mod tests {
         assert_eq!(
             String::from_utf8_lossy(&xml),
             "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" uid=\"4321\" user=\"osm\" \
-             changeset=\"1234\" version=\"1\">\n\
+             changeset=\"1234\" version=\"1\" timestamp=\"2020-01-02T03:04:05Z\">\n\
              \t\t<tag k=\"name\" v=\"Neu Broderstorf\"/>\n\
              \t\t<tag k=\"traffic_sign\" v=\"city_limit\"/>\n\
              \t</node>\n"
