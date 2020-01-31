@@ -379,7 +379,6 @@ impl<R: BufRead> O5mDecoder<R> {
                     }
                     return Err(e);
                 }
-                Err(e) => return Err(e),
             }
         }
         Ok(vec)

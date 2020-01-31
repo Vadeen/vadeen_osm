@@ -2,7 +2,7 @@ use super::super::chrono::{TimeZone, Utc};
 use super::quick_xml::events::{BytesDecl, BytesEnd, BytesStart, Event};
 use super::quick_xml::Writer;
 use crate::geo::Boundary;
-use crate::osm_io::error::{Result, Error};
+use crate::osm_io::error::{Error, Result};
 use crate::osm_io::OsmWriter;
 use crate::{Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use std::io::Write;
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(
             String::from_utf8_lossy(&xml),
             "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" version=\"1\" uid=\"4321\" \
-                     user=\"osm\" changeset=\"1234\" timestamp=\"2010-09-30T19:23:30Z\"/>\n"
+             user=\"osm\" changeset=\"1234\" timestamp=\"2010-09-30T19:23:30Z\"/>\n"
         );
     }
 
@@ -315,7 +315,7 @@ mod tests {
         assert_eq!(
             String::from_utf8_lossy(&xml),
             "\t<node id=\"10\" lat=\"65.12\" lon=\"55.21\" version=\"1\" uid=\"4321\" \
-                     user=\"osm\" changeset=\"1234\" timestamp=\"2020-01-02T03:04:05Z\">\n\
+             user=\"osm\" changeset=\"1234\" timestamp=\"2020-01-02T03:04:05Z\">\n\
              \t\t<tag k=\"name\" v=\"Neu Broderstorf\"/>\n\
              \t\t<tag k=\"traffic_sign\" v=\"city_limit\"/>\n\
              \t</node>\n"
@@ -350,7 +350,7 @@ mod tests {
         assert_eq!(
             String::from_utf8_lossy(&xml),
             "\t<way id=\"47\" version=\"2\" uid=\"222\" user=\"mos\" changeset=\"12\" \
-                    timestamp=\"2010-09-30T19:23:30Z\">\n\
+             timestamp=\"2010-09-30T19:23:30Z\">\n\
              \t\t<nd ref=\"44\"/>\n\
              \t\t<nd ref=\"45\"/>\n\
              \t\t<nd ref=\"46\"/>\n\
@@ -392,7 +392,7 @@ mod tests {
         assert_eq!(
             String::from_utf8_lossy(&xml),
             "\t<relation id=\"47\" version=\"2\" uid=\"222\" user=\"mos\" changeset=\"12\" \
-                         timestamp=\"2010-09-30T19:23:30Z\">\n\
+             timestamp=\"2010-09-30T19:23:30Z\">\n\
              \t\t<member type=\"node\" ref=\"44\" role=\"\"/>\n\
              \t\t<member type=\"way\" ref=\"45\" role=\"inner\"/>\n\
              \t\t<member type=\"relation\" ref=\"46\" role=\"role\"/>\n\
