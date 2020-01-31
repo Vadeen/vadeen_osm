@@ -1,4 +1,4 @@
-use crate::osm_io::error::ErrorKind::{ParseError, IO};
+use crate::osm_io::error::ErrorKind::IO;
 use crate::osm_io::error::Repr::Simple;
 use std::fmt::{Display, Formatter};
 use std::io;
@@ -20,7 +20,13 @@ enum Repr {
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    ParseError,
+    /// File format error. E.g. unsupported or unrecognized osm format.
+    FileFormat,
+
+    /// Parse error. E.g. invalid data in file.
+    Parse,
+
+    /// IO error. E.g. file not found, permission denied.
     IO(io::Error),
 }
 
@@ -51,8 +57,8 @@ impl Error {
 impl ErrorKind {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            ParseError => None,
             IO(e) => Some(e),
+            _ => None,
         }
     }
 }
@@ -75,7 +81,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match &self.message {
             Some(message) => write!(f, "{}", message),
-            None => write!(f, "Unknown parse error occurred."),
+            None => write!(f, "Unknown error occurred."),
         }
     }
 }

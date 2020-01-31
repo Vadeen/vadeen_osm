@@ -1,7 +1,7 @@
 use super::super::chrono::{DateTime, Utc};
 use super::quick_xml::Reader;
 use crate::geo::{Boundary, Coordinate};
-use crate::osm_io::error::ErrorKind::ParseError;
+use crate::osm_io::error::ErrorKind::Parse;
 use crate::osm_io::error::{Error, Result};
 use crate::osm_io::OsmReader;
 use crate::{AuthorInformation, Meta, Node, Osm, Relation, RelationMember, Tag, Way};
@@ -48,7 +48,7 @@ impl Attributes {
     fn get_required(&self, val: &str) -> Result<&String> {
         Ok(self.get(val).ok_or_else(|| {
             Error::new(
-                ParseError,
+                Parse,
                 Some(format!("Required attribute '{}' missing.", val)),
             )
         })?)
@@ -69,7 +69,7 @@ impl Attributes {
     {
         str::parse(s).map_err(|_| {
             Error::new(
-                ParseError,
+                Parse,
                 Some(format!(
                     "The '{}' attribute contains invalid data '{}'.",
                     field, s
@@ -145,7 +145,7 @@ impl Attributes {
             Ok(time.timestamp())
         } else {
             return Err(Error::new(
-                ParseError,
+                Parse,
                 Some(format!("Invalid timestamp '{}'", time_str)),
             ));
         }
@@ -163,7 +163,7 @@ impl Attributes {
             "way" => Ok(RelationMember::Way(mem_ref, mem_role.to_owned())),
             "rel" => Ok(RelationMember::Relation(mem_ref, mem_role.to_owned())),
             t => Err(Error::new(
-                ParseError,
+                Parse,
                 Some(format!(
                     "The 'type' attribute contains invalid data '{}'.",
                     t
@@ -596,7 +596,7 @@ mod tests {
         for (field, xml) in data.iter() {
             let error = XmlReader::new(xml.as_bytes()).read().unwrap_err();
             match error.kind() {
-                ErrorKind::ParseError => assert_eq!(
+                ErrorKind::Parse => assert_eq!(
                     error.to_string(),
                     format!("Line 1: Required attribute '{}' missing.", field)
                 ),
@@ -609,7 +609,7 @@ mod tests {
         for (field, value, xml) in data.iter() {
             let error = XmlReader::new(xml.as_bytes()).read().unwrap_err();
             match error.kind() {
-                ErrorKind::ParseError => assert_eq!(
+                ErrorKind::Parse => assert_eq!(
                     error.to_string(),
                     format!(
                         "Line 1: The '{}' attribute contains invalid data '{}'.",

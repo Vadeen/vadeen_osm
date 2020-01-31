@@ -1,38 +1,53 @@
 //! IO functionality for OSM maps.
 //!
-//! You create readers or writers with the [`create_reader`] and [`create_writer`] functions. These
-//! returns readers and writers appropriate to the input or output format specified.
+//! Reading to and from files are easiest done with the [`read`] and [`write`] functions.
 //!
-//! The input and output format is defined by the [`FileFormat`] enum. This can either be specified
-//! explicitly or parsed from a path or string.
+//! Readers and writers are easies created with the [`create_reader`] and [`create_writer`]
+//! functions.
 //!
 //! Error handling is defined in the [`error`] module.
 //!
 //! # Examples
-//! Convert a .osm file to a .o5m file.
+//! Read from .osm file and write to .o5m file:
 //! ```rust,no_run
-//! # use vadeen_osm::Osm;
-//! # use vadeen_osm::osm_io::{create_writer, FileFormat, create_reader};
-//! # use std::fs::File;
+//! use vadeen_osm::osm_io::{read, write};
+//!
+//! let osm = read("map.osm").unwrap();
+//! write("map.o5m", &osm).unwrap();
+//! ```
+//!
+//! Read from arbitrary reader and write to arbitrary writer:
+//! ```rust,no_run
 //! # use std::path::Path;
 //! # use std::convert::TryInto;
+//! # use std::fs::File;
+//! # use vadeen_osm::osm_io::{create_reader, create_writer, FileFormat};
 //! # use std::io::BufReader;
-//! // Read map from map.osm
+//! // Read from file in this example, you can read from anything that implements the Read trait.
 //! let path = Path::new("map.osm");
-//! let format = path.try_into().unwrap(); // Parse input format from path.
-//! let file = File::open(path).unwrap();
-//! let mut reader = create_reader(BufReader::new(file), format);
+//! let input = File::open(path).unwrap();
+//!
+//! // Get format from path. This can also be specified as FileFormat::Xml or any other FileFormat.
+//! let format = path.try_into().unwrap();
+//!
+//! // Create reader and read.
+//! let mut reader = create_reader(BufReader::new(input), format);
 //! let osm = reader.read().unwrap();
 //!
-//! // Write map to map.o5m
-//! let path = Path::new("map.o5m");
-//! let output = File::create(path).unwrap();
+//! // ... do som stuff with the map.
+//!
+//! // Write to a Vec in this example, you can write to anything that implements the Write trait.
+//! let output = Vec::new();
+//!
+//! // Create writer and write.
 //! let mut writer = create_writer(output, FileFormat::O5m);
 //! writer.write(&osm);
 //! ```
 //!
 //! [`create_reader`]: fn.create_reader.html
 //! [`create_writer`]: fn.create_writer.html
+//! [`read`]: fn.read.html
+//! [`write`]: fn.write.html
 //! [`FileFormat`]: enum.FileFormat.html
 //! [`error`]: error/index.html
 extern crate chrono;
@@ -48,7 +63,10 @@ use crate::osm_io::o5m::O5mReader;
 use crate::osm_io::xml::XmlReader;
 use crate::Osm;
 use std::convert::{TryFrom, TryInto};
-use std::io::{BufRead, Write};
+use std::ffi::OsStr;
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 
 /// Represent a osm file format.
@@ -83,17 +101,81 @@ pub trait OsmReader {
     fn read(&mut self) -> std::result::Result<Osm, Error>;
 }
 
-/// Creates an `OsmWriter` appropriate to the provided `FileFormat`.
-pub fn create_writer<'a, W: Write + 'a>(
-    writer: W,
-    format: FileFormat,
-) -> Box<dyn OsmWriter<W> + 'a> {
-    match format {
-        FileFormat::O5m => Box::new(O5mWriter::new(writer)),
-        FileFormat::Xml => Box::new(XmlWriter::new(writer)),
+/// Convenience function for easily reading osm files.
+/// Format is determined from file ending.
+///
+/// # Example
+/// ```rust,no_run
+/// # use vadeen_osm::osm_io::read;
+/// // Read xml map.
+/// let osm = read("map.osm");
+///
+/// // Read o5m map.
+/// let osm = read("map.o5m");
+/// ```
+pub fn read<S: AsRef<OsStr> + Display + ?Sized>(s: &S) -> Result<Osm> {
+    let path = Path::new(s);
+    if let Ok(format) = path.try_into() {
+        let file = File::open(path)?;
+        let mut reader = create_reader(BufReader::new(file), format);
+        reader.read()
+    } else {
+        Err(Error::new(
+            ErrorKind::FileFormat,
+            Some(format!("Could not determine format of '{}'.", s)),
+        ))
     }
 }
 
+/// Convenience function for easily writing osm files.
+/// Format is determined from file ending.
+///
+/// # Example
+/// ```rust,no_run
+/// # use vadeen_osm::OsmBuilder;
+/// # use vadeen_osm::osm_io::write;
+/// let osm = OsmBuilder::default().build();
+///
+/// // Write xml map.
+/// write("map.osm", &osm);
+///
+/// // Write o5m map.
+/// write("map.o5m", &osm);
+/// ```
+pub fn write<S: AsRef<OsStr> + Display + ?Sized>(s: &S, osm: &Osm) -> Result<()> {
+    let path = Path::new(s);
+    if let Ok(format) = path.try_into() {
+        let file = File::create(path)?;
+        let mut writer = create_writer(file, format);
+        writer.write(&osm)
+    } else {
+        Err(Error::new(
+            ErrorKind::FileFormat,
+            Some(format!("Could not determine format of '{}'.", s)),
+        ))
+    }
+}
+
+/// Creates an `OsmReader` appropriate to the provided `FileFormat`.
+///
+/// # Example
+/// Read map from map.osm
+/// ```rust,no_run
+/// # use std::path::Path;
+/// # use std::convert::TryInto;
+/// # use std::fs::File;
+/// # use vadeen_osm::osm_io::create_reader;
+/// # use std::io::BufReader;
+/// let path = Path::new("map.osm");
+/// let file = File::open(path).unwrap();
+///
+/// // Get format from path. This can also be specified as FileFormat::Xml.
+/// let format = path.try_into().unwrap();
+///
+/// // Read from file.
+/// let mut reader = create_reader(BufReader::new(file), format);
+/// let osm = reader.read().unwrap();
+/// ```
 pub fn create_reader<'a, R: BufRead + 'a>(
     reader: R,
     format: FileFormat,
@@ -101,6 +183,36 @@ pub fn create_reader<'a, R: BufRead + 'a>(
     match format {
         FileFormat::Xml => Box::new(XmlReader::new(reader)),
         FileFormat::O5m => Box::new(O5mReader::new(reader)),
+    }
+}
+
+/// Creates an `OsmWriter` appropriate to the provided `FileFormat`.
+///
+/// # Example
+/// Write map to map.o5m
+/// ```rust,no_run
+/// # use vadeen_osm::{Osm, OsmBuilder};
+/// # use vadeen_osm::osm_io::{create_writer, FileFormat, create_reader};
+/// # use std::fs::File;
+/// # use std::path::Path;
+/// # use std::convert::TryInto;
+/// # use std::io::BufReader;
+/// let builder = OsmBuilder::default();
+/// // builder.add_polygon(..); etc...
+/// let osm = builder.build();
+///
+/// // Write to file.
+/// let output = File::create("map.o5m").unwrap();
+/// let mut writer = create_writer(output, FileFormat::O5m);
+/// writer.write(&osm);
+/// ```
+pub fn create_writer<'a, W: Write + 'a>(
+    writer: W,
+    format: FileFormat,
+) -> Box<dyn OsmWriter<W> + 'a> {
+    match format {
+        FileFormat::O5m => Box::new(O5mWriter::new(writer)),
+        FileFormat::Xml => Box::new(XmlWriter::new(writer)),
     }
 }
 
@@ -149,7 +261,7 @@ impl TryFrom<&Path> for FileFormat {
 
 #[cfg(test)]
 mod tests {
-    use crate::osm_io::FileFormat;
+    use crate::osm_io::{read, FileFormat};
     use std::convert::TryInto;
     use std::path::Path;
 
@@ -180,5 +292,14 @@ mod tests {
 
         let format = (&"osm".to_owned()).try_into();
         assert_eq!(format, Ok(FileFormat::Xml));
+    }
+
+    #[test]
+    fn read_invalid_format() {
+        let err = read("osm.invalid").unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Could not determine format of 'osm.invalid'."
+        );
     }
 }

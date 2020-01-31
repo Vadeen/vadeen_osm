@@ -3,18 +3,14 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 use vadeen_osm::geo::Coordinate;
-use vadeen_osm::osm_io::{create_reader, create_writer, FileFormat};
+use vadeen_osm::osm_io::{create_reader, create_writer, FileFormat, read};
 use vadeen_osm::RelationMember::Way;
 
 /// real_map.o5m is real_map.osm converted with osmconvert. There seems to be coordinate drifting
 /// in that converter, so coordinates do not match up with the .osm version.
 #[test]
 fn read_o5m_file() {
-    let path = Path::new("./tests/test_data/real_map.o5m");
-    let format = path.try_into().unwrap();
-    let file = File::open(path).unwrap();
-    let mut reader = create_reader(BufReader::new(file), format);
-    let osm = reader.read().unwrap();
+    let osm = read("./tests/test_data/real_map.o5m").unwrap();
 
     let boundary = osm.boundary.as_ref().unwrap();
     assert_eq!(boundary.min, (60.6750500, 17.1362500).into());
