@@ -73,7 +73,7 @@ pub enum FileFormat {
 
 /// Writer for the osm formats.
 pub trait OsmWriter<W: Write> {
-    fn write(&mut self, osm: &Osm) -> std::result::Result<(), ErrorKind>;
+    fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error>;
 
     fn into_inner(self: Box<Self>) -> W;
 }

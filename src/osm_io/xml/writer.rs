@@ -2,7 +2,7 @@ use super::super::chrono::{TimeZone, Utc};
 use super::quick_xml::events::{BytesDecl, BytesEnd, BytesStart, Event};
 use super::quick_xml::Writer;
 use crate::geo::Boundary;
-use crate::osm_io::error::{ErrorKind, Result};
+use crate::osm_io::error::{Result, Error};
 use crate::osm_io::OsmWriter;
 use crate::{Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use std::io::Write;
@@ -162,7 +162,7 @@ impl<W: Write> XmlWriter<W> {
 }
 
 impl<W: Write> OsmWriter<W> for XmlWriter<W> {
-    fn write(&mut self, osm: &Osm) -> std::result::Result<(), ErrorKind> {
+    fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error> {
         self.write_start()?;
 
         if let Some(boundary) = &osm.boundary {

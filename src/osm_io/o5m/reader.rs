@@ -371,11 +371,13 @@ impl<R: BufRead> O5mDecoder<R> {
         loop {
             match f(self) {
                 Ok(r) => vec.push(r),
-                Err(ErrorKind::IO(e)) => {
-                    if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                        break;
+                Err(e) => {
+                    if let ErrorKind::IO(err) = e.kind() {
+                        if err.kind() == std::io::ErrorKind::UnexpectedEof {
+                            break;
+                        }
                     }
-                    return Err(ErrorKind::IO(e));
+                    return Err(e);
                 }
                 Err(e) => return Err(e),
             }
@@ -392,9 +394,9 @@ impl<R: BufRead> OsmReader for O5mReader<R> {
             match self.parse_next(&mut osm) {
                 Ok(true) => {}
                 Ok(false) => break,
-                Err(cause) => {
-                    // TODO report byte position
-                    return Err(Error::new(cause, None, None));
+                Err(error) => {
+                    // TODO if parse error, include byte position.
+                    return Err(error);
                 }
             }
         }

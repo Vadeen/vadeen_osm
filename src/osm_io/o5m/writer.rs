@@ -3,7 +3,7 @@ use std::io::Write;
 
 use super::*;
 use crate::geo::{Boundary, Coordinate};
-use crate::osm_io::error::ErrorKind;
+use crate::osm_io::error::Error;
 use crate::osm_io::o5m::varint::VarInt;
 use crate::osm_io::o5m::Delta::{
     ChangeSet, Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, Time, WayRef,
@@ -88,7 +88,7 @@ impl<W: Write> O5mWriter<W> {
 }
 
 impl<W: Write> OsmWriter<W> for O5mWriter<W> {
-    fn write(&mut self, osm: &Osm) -> std::result::Result<(), ErrorKind> {
+    fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error> {
         self.reset()?;
         self.inner.write_all(&[O5M_HEADER])?;
         self.inner.write_all(O5M_HEADER_DATA)?;

@@ -1,63 +1,61 @@
-use std::error;
 use std::fmt::{Display, Formatter};
 use std::io;
+use crate::osm_io::error::Repr::Simple;
+use crate::osm_io::error::ErrorKind::{IO, ParseError};
 
-pub type Result<T> = std::result::Result<T, ErrorKind>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents errors that may occur when reading or writing osm.
 #[derive(Debug)]
 pub struct Error {
-    kind: ErrorKind,
-    position: Option<u32>, // Byte position for binary files.
-    line: Option<u32>,     // Line for text files.
+    repr: Repr,
+    message: Option<String>,
 }
 
-/// TODO don't expose internal error in this way.
 /// It will make it possible to change internals without breaking change.
 #[derive(Debug)]
+enum Repr {
+    Simple(ErrorKind),
+}
+
+#[derive(Debug)]
 pub enum ErrorKind {
-    QuickXml(quick_xml::Error),
+    ParseError,
     IO(io::Error),
-    InvalidData(String),
 }
 
 impl Error {
-    pub fn new(kind: ErrorKind, position: Option<u32>, line: Option<u32>) -> Self {
+    pub fn new(kind: ErrorKind, message: Option<String>) -> Self {
         Error {
-            kind,
-            position,
-            line,
+            repr: Simple(kind),
+            message
         }
-    }
-
-    /// Returns byte position where error occurred if available.
-    pub fn position(&self) -> Option<u32> {
-        self.position
-    }
-
-    /// Returns on which line error occurred if available.
-    pub fn line(&self) -> Option<u32> {
-        self.line
     }
 
     /// Returns reference to error kind.
     pub fn kind(&self) -> &ErrorKind {
-        &self.kind
+        match &self.repr {
+            Simple(e) => &e,
+        }
     }
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        /*
         if self.line.is_some() {
             writeln!(f, "Parse error at line {}", self.line.unwrap())?;
         } else if self.position.is_some() {
             writeln!(f, "Parse error at position {}", self.position.unwrap())?;
         }
         ErrorKind::fmt(&self.kind, f)?;
+        // TODO
+        */
         Ok(())
     }
 }
 
+/*
 impl ErrorKind {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
@@ -66,8 +64,9 @@ impl ErrorKind {
             ErrorKind::InvalidData(_) => None,
         }
     }
-}
+}*/
 
+/*
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
@@ -76,22 +75,31 @@ impl Display for ErrorKind {
             ErrorKind::InvalidData(s) => write!(f, "Invalid data: {}", s),
         }
     }
-}
+}*/
 
+/*
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         self.kind.source()
     }
 }
+*/
 
-impl From<io::Error> for ErrorKind {
+impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
-        ErrorKind::IO(e)
+        Error {
+            repr: Simple(IO(e)),
+            message: None
+        }
     }
 }
 
-impl From<quick_xml::Error> for ErrorKind {
+impl From<quick_xml::Error> for Error {
     fn from(e: quick_xml::Error) -> Self {
-        ErrorKind::QuickXml(e)
+        Error {
+            repr: Simple(ParseError),
+            message: Some("".to_owned()) // TODO xml error message
+        }
+//        ErrorKind::QuickXml(e)
     }
 }
