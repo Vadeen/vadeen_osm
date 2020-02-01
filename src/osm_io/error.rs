@@ -86,6 +86,13 @@ impl Display for Error {
     }
 }
 
+/// Errors can not really be compared. This is to allow the results to be compared when they are Ok.
+impl PartialEq for Error {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
+
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
         Error {

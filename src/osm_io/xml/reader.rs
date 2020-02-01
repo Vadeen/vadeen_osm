@@ -144,10 +144,10 @@ impl Attributes {
         if let Ok(time) = time_str.parse::<DateTime<Utc>>() {
             Ok(time.timestamp())
         } else {
-            return Err(Error::new(
+            Err(Error::new(
                 Parse,
                 Some(format!("Invalid timestamp '{}'", time_str)),
-            ));
+            ))
         }
     }
 
@@ -177,6 +177,7 @@ impl<R: BufRead> XmlReader<R> {
     pub fn new(inner: R) -> XmlReader<R> {
         XmlReader {
             reader: Reader::from_reader(inner),
+
             line: 1,
         }
     }

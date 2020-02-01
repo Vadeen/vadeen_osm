@@ -63,8 +63,6 @@ use crate::osm_io::o5m::O5mReader;
 use crate::osm_io::xml::XmlReader;
 use crate::Osm;
 use std::convert::{TryFrom, TryInto};
-use std::ffi::OsStr;
-use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -113,18 +111,11 @@ pub trait OsmReader {
 /// // Read o5m map.
 /// let osm = read("map.o5m");
 /// ```
-pub fn read<S: AsRef<OsStr> + Display + ?Sized>(s: &S) -> Result<Osm> {
-    let path = Path::new(s);
-    if let Ok(format) = path.try_into() {
-        let file = File::open(path)?;
-        let mut reader = create_reader(BufReader::new(file), format);
-        reader.read()
-    } else {
-        Err(Error::new(
-            ErrorKind::FileFormat,
-            Some(format!("Could not determine format of '{}'.", s)),
-        ))
-    }
+pub fn read<P: AsRef<Path>>(path: P) -> Result<Osm> {
+    let format = path.as_ref().try_into()?;
+    let file = File::open(path)?;
+    let mut reader = create_reader(BufReader::new(file), format);
+    reader.read()
 }
 
 /// Convenience function for easily writing osm files.
@@ -142,18 +133,11 @@ pub fn read<S: AsRef<OsStr> + Display + ?Sized>(s: &S) -> Result<Osm> {
 /// // Write o5m map.
 /// write("map.o5m", &osm);
 /// ```
-pub fn write<S: AsRef<OsStr> + Display + ?Sized>(s: &S, osm: &Osm) -> Result<()> {
-    let path = Path::new(s);
-    if let Ok(format) = path.try_into() {
-        let file = File::create(path)?;
-        let mut writer = create_writer(file, format);
-        writer.write(&osm)
-    } else {
-        Err(Error::new(
-            ErrorKind::FileFormat,
-            Some(format!("Could not determine format of '{}'.", s)),
-        ))
-    }
+pub fn write<P: AsRef<Path>>(path: P, osm: &Osm) -> Result<()> {
+    let format = path.as_ref().try_into()?;
+    let file = File::create(path)?;
+    let mut writer = create_writer(file, format);
+    writer.write(&osm)
 }
 
 /// Creates an `OsmReader` appropriate to the provided `FileFormat`.
@@ -227,19 +211,22 @@ impl FileFormat {
 }
 
 impl TryFrom<&str> for FileFormat {
-    type Error = String;
+    type Error = Error;
 
     fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
         if let Some(format) = FileFormat::from(&value) {
             Ok(format)
         } else {
-            Err(format!("'{:?}' is not a valid osm file format", value))
+            Err(Error::new(
+                ErrorKind::FileFormat,
+                Some(format!("'{}' is not a valid osm file format.", value)),
+            ))
         }
     }
 }
 
 impl TryFrom<&String> for FileFormat {
-    type Error = String;
+    type Error = Error;
 
     fn try_from(value: &String) -> std::result::Result<Self, Self::Error> {
         (value[..]).try_into()
@@ -247,7 +234,7 @@ impl TryFrom<&String> for FileFormat {
 }
 
 impl TryFrom<&Path> for FileFormat {
-    type Error = String;
+    type Error = Error;
 
     fn try_from(path: &Path) -> std::result::Result<Self, Self::Error> {
         if let Some(ext) = path.extension() {
@@ -255,7 +242,13 @@ impl TryFrom<&Path> for FileFormat {
                 return str.try_into();
             }
         }
-        Err(format!("Unknown file format of '{:?}'", path.to_str()))
+        Err(Error::new(
+            ErrorKind::FileFormat,
+            Some(format!(
+                "Could not determine format of '{}'.",
+                path.to_str().unwrap()
+            )),
+        ))
     }
 }
 
@@ -297,9 +290,6 @@ mod tests {
     #[test]
     fn read_invalid_format() {
         let err = read("osm.invalid").unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "Could not determine format of 'osm.invalid'."
-        );
+        assert_eq!(err.to_string(), "'invalid' is not a valid osm file format.");
     }
 }
