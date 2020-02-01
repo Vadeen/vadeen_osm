@@ -70,7 +70,7 @@ impl Display for ErrorKind {
             ErrorKind::ParseError => write!(f, "Unknown parse error occurred.")?,
             IO(io_error) => match io_error.kind() {
                 io::ErrorKind::UnexpectedEof => write!(f, "Unexpected end of file.")?,
-                _ => write!(f, "Unknown IO error.")?,
+                _ => write!(f, "IO error: {}", io_error)?,
             },
         };
         Ok(())
