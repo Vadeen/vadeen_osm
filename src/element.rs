@@ -71,12 +71,9 @@ pub enum RelationMember {
     Relation(i64, RelationRole),
 }
 
-impl From<&(String, String)> for Tag {
-    fn from((key, value): &(String, String)) -> Self {
-        Tag {
-            key: key.clone(),
-            value: value.clone(),
-        }
+impl From<(String, String)> for Tag {
+    fn from((key, value): (String, String)) -> Self {
+        Tag { key, value }
     }
 }
 

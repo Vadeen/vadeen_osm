@@ -262,7 +262,7 @@ impl<R: BufRead> O5mDecoder<R> {
     /// data to read in the current limit.
     fn read_tags(&mut self) -> Result<Vec<Tag>> {
         let pairs = self.read_until_eof(|r| Ok(r.read_string_pair()?))?;
-        let tags = pairs.iter().map(|s| s.into()).collect();
+        let tags = pairs.into_iter().map(|s| s.into()).collect();
         Ok(tags)
     }
 

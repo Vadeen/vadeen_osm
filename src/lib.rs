@@ -39,8 +39,8 @@ use std::collections::HashMap;
 ///
 /// // Add a polygon, which is represented as a way and two nodes in osm.
 /// builder.add_polygon(
-///     &[vec![(1.0, 1.0).into(), (2.0, 2.0).into()]],
-///     &[("key".to_owned(), "value".to_owned())]
+///     vec![vec![(1.0, 1.0).into(), (2.0, 2.0).into()]],
+///     vec![("key", "value").into()]
 /// );
 ///
 /// let osm = builder.build();
@@ -91,24 +91,22 @@ impl OsmBuilder {
         self.osm
     }
 
-    pub fn add_point(&mut self, coordinate: Coordinate, tags: &[(String, String)]) {
-        let tags = tags.iter().map(|t| t.into()).collect();
+    pub fn add_point(&mut self, coordinate: Coordinate, tags: Vec<Tag>) {
         self.add_node(coordinate, tags);
     }
 
     /// First part is the outer polygon, rest of the parts is inner polygons.
-    pub fn add_polygon(&mut self, parts: &[Vec<Coordinate>], tags: &[(String, String)]) {
+    pub fn add_polygon(&mut self, mut parts: Vec<Vec<Coordinate>>, tags: Vec<Tag>) {
         if parts.len() == 1 {
-            self.add_polyline(&parts[0], tags);
+            self.add_polyline(parts.pop().unwrap(), tags);
         } else {
             self.add_multipolygon(parts, tags);
         }
     }
 
-    pub fn add_polyline(&mut self, coordinates: &[Coordinate], tags: &[(String, String)]) -> i64 {
+    pub fn add_polyline(&mut self, coordinates: Vec<Coordinate>, tags: Vec<Tag>) -> i64 {
         let refs = self.add_nodes(coordinates);
         let id = self.next_id();
-        let tags = tags.iter().map(|t| t.into()).collect();
         let meta = Meta {
             tags,
             ..Default::default()
@@ -117,13 +115,12 @@ impl OsmBuilder {
         id
     }
 
-    fn add_multipolygon(&mut self, parts: &[Vec<Coordinate>], tags: &[(String, String)]) {
+    fn add_multipolygon(&mut self, parts: Vec<Vec<Coordinate>>, mut tags: Vec<Tag>) {
         let mut polygon_ids = Vec::new();
         for part in parts {
-            polygon_ids.push(self.add_polyline(part, &[]));
+            polygon_ids.push(self.add_polyline(part, vec![]));
         }
 
-        let mut tags: Vec<Tag> = tags.iter().map(|t| t.into()).collect();
         tags.push(("type", "multipolygon").into());
 
         let (outer, inner) = polygon_ids.split_first().unwrap();
@@ -146,12 +143,11 @@ impl OsmBuilder {
         self.osm.add_relation(Relation { id, members, meta });
     }
 
-    fn add_nodes(&mut self, coordinates: &[Coordinate]) -> Vec<i64> {
-        let mut refs = Vec::new();
-        for c in coordinates {
-            refs.push(self.add_node(c.clone(), vec![]));
-        }
-        refs
+    fn add_nodes(&mut self, coordinates: Vec<Coordinate>) -> Vec<i64> {
+        coordinates
+            .into_iter()
+            .map(|c| self.add_node(c, vec![]))
+            .collect()
     }
 
     fn add_node(&mut self, coordinate: Coordinate, tags: Vec<Tag>) -> i64 {
