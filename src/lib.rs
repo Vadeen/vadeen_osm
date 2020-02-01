@@ -91,6 +91,11 @@ impl OsmBuilder {
         self.osm
     }
 
+    pub fn add_point(&mut self, coordinate: Coordinate, tags: &[(String, String)]) {
+        let tags = tags.iter().map(|t| t.into()).collect();
+        self.add_node(coordinate, tags);
+    }
+
     pub fn add_polygon(&mut self, parts: &[Vec<Coordinate>], tags: &[(String, String)]) {
         if parts.len() == 1 {
             self.add_polyline(&parts[0], tags);
