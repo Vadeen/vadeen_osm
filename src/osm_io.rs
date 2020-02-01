@@ -11,9 +11,12 @@
 //! Read from .osm file and write to .o5m file:
 //! ```rust,no_run
 //! use vadeen_osm::osm_io::{read, write};
-//!
-//! let osm = read("map.osm").unwrap();
-//! write("map.o5m", &osm).unwrap();
+//! # use vadeen_osm::osm_io::error::Result;
+//! # fn main() -> Result<()> {
+//! let osm = read("map.osm")?;
+//! write("map.o5m", &osm)?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! Read from arbitrary reader and write to arbitrary writer:
@@ -22,17 +25,19 @@
 //! # use std::convert::TryInto;
 //! # use std::fs::File;
 //! # use vadeen_osm::osm_io::{create_reader, create_writer, FileFormat};
+//! # use vadeen_osm::osm_io::error::Result;
 //! # use std::io::BufReader;
+//! # fn main() -> Result<()> {
 //! // Read from file in this example, you can read from anything that implements the Read trait.
 //! let path = Path::new("map.osm");
-//! let input = File::open(path).unwrap();
+//! let input = File::open(path)?;
 //!
 //! // Get format from path. This can also be specified as FileFormat::Xml or any other FileFormat.
-//! let format = path.try_into().unwrap();
+//! let format = path.try_into()?;
 //!
 //! // Create reader and read.
 //! let mut reader = create_reader(BufReader::new(input), format);
-//! let osm = reader.read().unwrap();
+//! let osm = reader.read()?;
 //!
 //! // ... do som stuff with the map.
 //!
@@ -42,6 +47,8 @@
 //! // Create writer and write.
 //! let mut writer = create_writer(output, FileFormat::O5m);
 //! writer.write(&osm);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! [`create_reader`]: fn.create_reader.html
@@ -104,12 +111,16 @@ pub trait OsmReader {
 ///
 /// # Example
 /// ```rust,no_run
+/// # use vadeen_osm::osm_io::error::Result;
 /// # use vadeen_osm::osm_io::read;
+/// # fn main() -> Result<()> {
 /// // Read xml map.
-/// let osm = read("map.osm");
+/// let osm = read("map.osm")?;
 ///
 /// // Read o5m map.
-/// let osm = read("map.o5m");
+/// let osm = read("map.o5m")?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn read<P: AsRef<Path>>(path: P) -> Result<Osm> {
     let format = path.as_ref().try_into()?;
@@ -124,14 +135,18 @@ pub fn read<P: AsRef<Path>>(path: P) -> Result<Osm> {
 /// # Example
 /// ```rust,no_run
 /// # use vadeen_osm::OsmBuilder;
+/// # use vadeen_osm::osm_io::error::Result;
 /// # use vadeen_osm::osm_io::write;
+/// # fn main() -> Result<()> {
 /// let osm = OsmBuilder::default().build();
 ///
 /// // Write xml map.
-/// write("map.osm", &osm);
+/// write("map.osm", &osm)?;
 ///
 /// // Write o5m map.
-/// write("map.o5m", &osm);
+/// write("map.o5m", &osm)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn write<P: AsRef<Path>>(path: P, osm: &Osm) -> Result<()> {
     let format = path.as_ref().try_into()?;
@@ -149,16 +164,20 @@ pub fn write<P: AsRef<Path>>(path: P, osm: &Osm) -> Result<()> {
 /// # use std::convert::TryInto;
 /// # use std::fs::File;
 /// # use vadeen_osm::osm_io::create_reader;
+/// # use vadeen_osm::osm_io::error::Result;
 /// # use std::io::BufReader;
+/// # fn main() -> Result<()> {
 /// let path = Path::new("map.osm");
-/// let file = File::open(path).unwrap();
+/// let file = File::open(path)?;
 ///
 /// // Get format from path. This can also be specified as FileFormat::Xml.
-/// let format = path.try_into().unwrap();
+/// let format = path.try_into()?;
 ///
 /// // Read from file.
 /// let mut reader = create_reader(BufReader::new(file), format);
-/// let osm = reader.read().unwrap();
+/// let osm = reader.read()?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn create_reader<'a, R: BufRead + 'a>(
     reader: R,
@@ -177,18 +196,22 @@ pub fn create_reader<'a, R: BufRead + 'a>(
 /// ```rust,no_run
 /// # use vadeen_osm::{Osm, OsmBuilder};
 /// # use vadeen_osm::osm_io::{create_writer, FileFormat, create_reader};
+/// # use vadeen_osm::osm_io::error::Result;
 /// # use std::fs::File;
 /// # use std::path::Path;
 /// # use std::convert::TryInto;
 /// # use std::io::BufReader;
+/// # fn main() -> Result<()> {
 /// let builder = OsmBuilder::default();
 /// // builder.add_polygon(..); etc...
 /// let osm = builder.build();
 ///
 /// // Write to file.
-/// let output = File::create("map.o5m").unwrap();
+/// let output = File::create("map.o5m")?;
 /// let mut writer = create_writer(output, FileFormat::O5m);
 /// writer.write(&osm);
+/// # Ok(())
+/// # }
 /// ```
 pub fn create_writer<'a, W: Write + 'a>(
     writer: W,

@@ -120,6 +120,14 @@ impl From<(f64, f64)> for Coordinate {
 }
 
 impl Boundary {
+    pub fn new(min: Coordinate, max: Coordinate) -> Boundary {
+        Boundary {
+            min,
+            max,
+            freeze: false,
+        }
+    }
+
     /// Same as `default()` but inverted so min contains max and max contains min.
     /// Used when a boundary are intended to be expanded by coordinates.
     pub fn inverted() -> Self {

@@ -16,12 +16,12 @@ To run the examples in the `examples/` folder run `cargo build --examples` and l
 use vadeen_osm::osm_io::{read, write};
 
 // Read from file, format is determined from path.
-let osm = read("map.osm").unwrap();
+let osm = read("map.osm")?;
 
 // ...render or modify the map.
 
 // Write to file, format is determined from path.
-write("map.o5m", &osm).unwrap();
+write("map.o5m", &osm)?;
 ```
 
 ### Create a map with the builder
@@ -67,10 +67,10 @@ builder.add_point((66.19, 1.3).into(), vec![("power", "tower").into()]);
 let osm = builder.build();
 
 // Write to file in the xml format.
-write("example_map.osm", &osm).unwrap();
+write("example_map.osm", &osm)?;
 
 // Write to file in the o5m format.
-write("example_map.o5m", &osm).unwrap();
+write("example_map.o5m", &osm)?;
 ```
 
 ## Create a map without builder

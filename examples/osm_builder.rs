@@ -1,7 +1,8 @@
 use vadeen_osm::osm_io::write;
+use vadeen_osm::osm_io::error::Result;
 use vadeen_osm::OsmBuilder;
 
-fn main() {
+fn main() -> Result<()> {
     // Create a builder.
     let mut builder = OsmBuilder::default();
 
@@ -41,8 +42,10 @@ fn main() {
     let osm = builder.build();
 
     // Write to file in the xml format.
-    write("example_map.osm", &osm).unwrap();
+    write("example_map.osm", &osm)?;
 
     // Write to file in the o5m format.
-    write("example_map.o5m", &osm).unwrap();
+    write("example_map.o5m", &osm)?;
+
+    Ok(())
 }

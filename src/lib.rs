@@ -24,7 +24,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 
 /// `OsmBuilder` makes it easy to build OSM maps from non OSM data. Polygons, multi polygons,
-/// poly lines and points are all represented as lists of coordinates.
+/// poly lines and points are all represented as vectors of coordinates.
 ///
 /// Nodes are automatically added and assigned ids. Ways and relations are automatically created
 /// with the correct references.
@@ -35,22 +35,35 @@ use std::collections::HashMap;
 /// # Examples
 /// ```
 /// # use vadeen_osm::OsmBuilder;
+/// # use vadeen_osm::geo::Boundary;
 /// let mut builder = OsmBuilder::default();
 ///
-/// // Add a polygon, which is represented as a way and two nodes in osm.
+/// // Add a point, represented as one node.
+/// builder.add_point((2.0, 2.0).into(), vec![("power", "tower").into()]);
+///
+/// // Add a poly line, represented as two nodes and a way.
+/// builder.add_polyline(
+///     vec![(2.0, 2.0).into(), (4.0, 5.0).into()],
+///     vec![("power", "line").into()]
+/// );
+///
+/// // Add a polygon, which is represented as one way and two nodes in osm.
 /// builder.add_polygon(
-///     vec![vec![(1.0, 1.0).into(), (2.0, 2.0).into()]],
-///     vec![("key", "value").into()]
+///     vec![
+///         // Outer polygon
+///         vec![(1.0, 1.0).into(), (10.0, 10.0).into(), (5.0, 5.0).into(), (1.0, 1.0).into()],
+///         // If you want inner polygons, add them here...
+///         // Each inner polygon is represented as a way, the polygons are connected by a relation.
+///     ],
+///     vec![("natural", "water").into()]
 /// );
 ///
 /// let osm = builder.build();
-/// assert_eq!(osm.nodes.len(), 2);
-/// assert_eq!(osm.ways.len(), 1);
+/// assert_eq!(osm.nodes.len(), 5);
+/// assert_eq!(osm.ways.len(), 2);
 /// assert_eq!(osm.relations.len(), 0);
 ///
-/// let boundary = osm.boundary.unwrap();
-/// assert_eq!(boundary.min, (1.0, 1.0).into());
-/// assert_eq!(boundary.max, (2.0, 2.0).into());
+/// assert_eq!(osm.boundary, Some(Boundary::new((1.0, 1.0).into(), (10.0, 10.0).into())));
 /// ```
 ///
 /// [`Osm`]: struct.Osm.html
@@ -96,6 +109,7 @@ impl OsmBuilder {
     }
 
     /// First part is the outer polygon, rest of the parts is inner polygons.
+    /// `parts` must not be empty or a panic will occur.
     pub fn add_polygon(&mut self, mut parts: Vec<Vec<Coordinate>>, tags: Vec<Tag>) {
         if parts.len() == 1 {
             self.add_polyline(parts.pop().unwrap(), tags);
