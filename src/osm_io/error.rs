@@ -63,11 +63,32 @@ impl ErrorKind {
     }
 }
 
+impl Display for ErrorKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            ErrorKind::FileFormat => write!(f, "File format not recognized.")?,
+            ErrorKind::Parse => write!(f, "Unknown parse error occurred.")?,
+            IO(io_error) => match io_error.kind() {
+                io::ErrorKind::UnexpectedEof => write!(f, "Unexpected end of file.")?,
+                _ => write!(f, "Unknown IO error.")?,
+            },
+        };
+        Ok(())
+    }
+}
+
 impl Repr {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Simple(kind) => kind.source(),
         }
+    }
+}
+
+impl Display for Repr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        let Simple(kind) = self;
+        kind.fmt(f)
     }
 }
 
@@ -81,7 +102,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match &self.message {
             Some(message) => write!(f, "{}", message),
-            None => write!(f, "Unknown error occurred."),
+            None => self.repr.fmt(f),
         }
     }
 }

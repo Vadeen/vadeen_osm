@@ -5,6 +5,7 @@ mod reader;
 mod varint;
 mod writer;
 
+use crate::osm_io::error::{Error, ErrorKind, Result};
 use crate::osm_io::o5m::varint::VarInt;
 pub use reader::*;
 use std::collections::VecDeque;
@@ -74,8 +75,19 @@ impl StringReferenceTable {
     }
 
     /// Get string from table. idx starts at 1.
-    pub fn get(&mut self, idx: u64) -> Option<&Vec<u8>> {
-        self.table.get((idx - 1) as usize)
+    pub fn get(&mut self, idx: u64) -> Result<&Vec<u8>> {
+        if let Some(value) = self.table.get((idx - 1) as usize) {
+            Ok(value)
+        } else {
+            Err(Error::new(
+                ErrorKind::Parse,
+                Some(format!(
+                    "String reference '{}' not found in table with size '{}'.",
+                    idx,
+                    self.table.len()
+                )),
+            ))
+        }
     }
 
     /// Get string reference. If string is present bytes representing a string reference will be

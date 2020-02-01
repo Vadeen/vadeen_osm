@@ -19,6 +19,8 @@ struct O5mDecoder<R: BufRead> {
     inner: Take<R>,
     string_table: StringReferenceTable,
     delta: DeltaState,
+    limit: u64,
+    position: u64,
 }
 
 impl<R: BufRead> O5mReader<R> {
@@ -26,6 +28,11 @@ impl<R: BufRead> O5mReader<R> {
         O5mReader {
             decoder: O5mDecoder::new(inner),
         }
+    }
+
+    /// Get the current position in the file.
+    fn position(&self) -> u64 {
+        self.decoder.position()
     }
 
     /// Parse next data set, returns false when there is no more data.
@@ -144,6 +151,8 @@ impl<R: BufRead> O5mDecoder<R> {
             inner: inner.take(0),
             string_table: StringReferenceTable::new(),
             delta: DeltaState::new(),
+            limit: 0,
+            position: 0,
         }
     }
 
@@ -156,7 +165,16 @@ impl<R: BufRead> O5mDecoder<R> {
     /// Set current limit of reader. If read past this an end of file error will occur.
     /// The limit is hit intentionally when reading tags and references etc.
     fn set_limit(&mut self, limit: u64) {
+        // Update position by calculating how much we have read on the current limit setting.
+        self.position += self.limit - self.inner.limit();
+
+        self.limit = limit;
         self.inner.set_limit(limit);
+    }
+
+    /// Get the current position in file.
+    fn position(&self) -> u64 {
+        self.position + (self.limit - self.inner.limit())
     }
 
     /// Sets limit of the reader by reading the limit from the stream.
@@ -224,8 +242,7 @@ impl<R: BufRead> O5mDecoder<R> {
     fn read_user(&mut self) -> Result<(u64, String)> {
         let reference = self.read_uvarint()?;
         if reference != 0 {
-            // TODO error handle
-            let bytes = self.string_table.get(reference).unwrap();
+            let bytes = self.string_table.get(reference)?;
             Ok(Self::bytes_to_user(bytes))
         } else {
             let bytes = self.read_string_bytes(2)?;
@@ -271,6 +288,14 @@ impl<R: BufRead> O5mDecoder<R> {
     fn read_relation_member(&mut self) -> Result<RelationMember> {
         let id = self.read_varint()?;
         let s = self.read_string()?;
+
+        if !s.is_char_boundary(1) || s.len() < 2 {
+            return Err(Error::new(
+                ErrorKind::Parse,
+                Some("Corrupt relation member reference data.".to_owned()),
+            ));
+        }
+
         let (mem_type, mem_role) = s.split_at(1);
 
         match mem_type {
@@ -286,7 +311,10 @@ impl<R: BufRead> O5mDecoder<R> {
                 self.delta.decode(RelRelRef, id),
                 mem_role.to_owned(),
             )),
-            _ => panic!("TODO error handle"), // TODO
+            s => Err(Error::new(
+                ErrorKind::Parse,
+                Some(format!("Invalid relation member type '{}'.", s)),
+            )),
         }
     }
 
@@ -295,11 +323,8 @@ impl<R: BufRead> O5mDecoder<R> {
     fn read_string_pair(&mut self) -> Result<(String, String)> {
         let reference = VarInt::read(&mut self.inner)?.into_u64();
         if reference != 0 {
-            if let Some(bytes) = self.string_table.get(reference) {
-                Ok(Self::bytes_to_string_pair(bytes))
-            } else {
-                Ok(("?".to_owned(), "?".to_owned()))
-            }
+            let bytes = self.string_table.get(reference)?;
+            Ok(Self::bytes_to_string_pair(bytes))
         } else {
             let bytes = self.read_string_bytes(2)?;
             Ok(Self::bytes_to_string_pair(&bytes))
@@ -313,8 +338,7 @@ impl<R: BufRead> O5mDecoder<R> {
             let value = self.read_string_bytes(1)?;
             String::from_utf8_lossy(&value).into_owned()
         } else {
-            // TODO error handling
-            let value = self.string_table.get(reference).unwrap();
+            let value = self.string_table.get(reference)?;
             String::from_utf8_lossy(&value).into_owned()
         };
 
@@ -330,8 +354,8 @@ impl<R: BufRead> O5mDecoder<R> {
     }
 
     /// Splits bytes at the first zero byte.
+    /// Panics if 0-byte is not found.
     fn split_string_bytes(bytes: &[u8]) -> (&[u8], &[u8]) {
-        // TODO error handle
         let div = bytes.iter().position(|b| b == &0u8).unwrap();
         (&bytes[0..div], &bytes[(div + 1)..])
     }
@@ -393,8 +417,12 @@ impl<R: BufRead> OsmReader for O5mReader<R> {
             match self.parse_next(&mut osm) {
                 Ok(true) => {}
                 Ok(false) => break,
-                Err(error) => {
-                    // TODO if parse error, include byte position.
+                Err(mut error) => {
+                    if let Some(message) = error.message() {
+                        let message = format!("Ending at byte {}: {}", self.position(), message);
+                        error.set_message(message);
+                    }
+
                     return Err(error);
                 }
             }
@@ -408,6 +436,7 @@ impl<R: BufRead> OsmReader for O5mReader<R> {
 mod test {
     use crate::geo::Coordinate;
     use crate::osm_io::o5m::O5mReader;
+    use crate::osm_io::OsmReader;
     use crate::{AuthorInformation, Meta, Node, Relation, RelationMember, Way};
     use std::io::BufReader;
 
@@ -518,5 +547,98 @@ mod test {
                 }
             }
         )
+    }
+
+    #[test]
+    fn invalid_relation_member_string() {
+        let data: Vec<u8> = vec![
+            0x12, // relation
+            0x28, // length of following data of this node: 40 bytes
+            0x90, 0x2e, // id: 0+2952=2952
+            0x00, // no version and no author information
+            0x11, // length of references section: 17 bytes
+            0xf4, 0x98, 0x83, 0x0b, // id: 0+11560506=11560506
+            0x00, 0xFF, 0x00, // Invalid string pair member ref.
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let mut reader = O5mReader::new(BufReader::new(data.as_slice()));
+        let error = reader.read().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Ending at byte 13: Corrupt relation member reference data."
+        );
+    }
+
+    #[test]
+    fn invalid_relation_member_type() {
+        let data: Vec<u8> = vec![
+            0x12, // relation
+            0x28, // length of following data of this node: 40 bytes
+            0x90, 0x2e, // id: 0+2952=2952
+            0x00, // no version and no author information
+            0x11, // length of references section: 17 bytes
+            0xf4, 0x98, 0x83, 0x0b, // id: 0+11560506=11560506
+            0x00, // String pair
+            0x35, // Invalid type: 5
+            0x69, 0x6e, 0x6e, 0x65, 0x72, 0x00, // role: "inner"
+            0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let mut reader = O5mReader::new(BufReader::new(data.as_slice()));
+        let error = reader.read().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Ending at byte 18: Invalid relation member type '5'."
+        );
+    }
+
+    #[test]
+    fn never_ending_varint() {
+        let data: Vec<u8> = vec![
+            0x12, // relation
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        ];
+
+        let mut reader = O5mReader::new(BufReader::new(data.as_slice()));
+        let error = reader.read().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Ending at byte 10: Varint overflow, read 9 bytes."
+        );
+    }
+
+    #[test]
+    fn invalid_string_reference() {
+        let data: Vec<u8> = vec![
+            0x12, // relation
+            0x28, // length of following data of this node: 40 bytes
+            0x90, 0x2e, // id: 0+2952=2952
+            0x00, // no version and no author information
+            0x11, // length of references section: 17 bytes
+            0xf4, 0x98, 0x83, 0x0b, // id: 0+11560506=11560506
+            0x03, // Invalid string reference
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let mut reader = O5mReader::new(BufReader::new(data.as_slice()));
+        let error = reader.read().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Ending at byte 11: String reference '3' not found in table with size '0'."
+        );
+    }
+
+    #[test]
+    fn unexpected_eof() {
+        let data: Vec<u8> = vec![
+            0x12, // relation
+                 // No data
+        ];
+
+        let mut reader = O5mReader::new(BufReader::new(data.as_slice()));
+        let error = reader.read().unwrap_err();
+        assert_eq!(error.to_string(), "Unexpected end of file.");
     }
 }

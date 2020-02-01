@@ -14,10 +14,11 @@
 //!
 //! See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
 
-use crate::osm_io::error::Result;
+use crate::osm_io::error::{Error, ErrorKind, Result};
 use std::io::Read;
 
 /// Represents a variable integer (signed or unsigned).
+#[derive(Debug)]
 pub struct VarInt {
     bytes: Vec<u8>,
 }
@@ -43,7 +44,15 @@ impl VarInt {
     /// Reads a varint from a reader.
     pub fn read<R: Read>(reader: &mut R) -> Result<Self> {
         let mut bytes = Vec::new();
-        for _ in 0..9 {
+        for i in 0..10 {
+            // If we get to byte 9 we have more bits than 64.
+            if i == 9 {
+                return Err(Error::new(
+                    ErrorKind::Parse,
+                    Some("Varint overflow, read 9 bytes.".to_owned()),
+                ));
+            }
+
             let mut buf = [0u8; 1];
             reader.read_exact(&mut buf)?;
 
@@ -204,6 +213,13 @@ mod test_from_bytes {
     fn two_byte_negative_varint() {
         let varint = VarInt::new(vec![0x81, 0x01]);
         assert_eq!(varint.into_i64(), -65);
+    }
+
+    #[test]
+    fn too_many_bytes() {
+        let data = vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        let error = VarInt::read(&mut data.as_slice()).unwrap_err();
+        assert_eq!(error.to_string(), "Varint overflow, read 9 bytes.")
     }
 }
 
