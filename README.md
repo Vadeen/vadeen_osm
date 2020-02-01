@@ -67,10 +67,10 @@ builder.add_point((66.19, 1.3).into(), vec![("power", "tower").into()]);
 let osm = builder.build();
 
 // Write to file in the xml format.
-write("./example_map.osm", &osm).unwrap();
+write("example_map.osm", &osm).unwrap();
 
 // Write to file in the o5m format.
-write("./example_map.o5m", &osm).unwrap();
+write("example_map.o5m", &osm).unwrap();
 ```
 
 ## Create a map without builder
