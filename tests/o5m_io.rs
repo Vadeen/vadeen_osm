@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 use vadeen_osm::geo::Coordinate;
-use vadeen_osm::osm_io::{create_reader, create_writer, FileFormat, read};
+use vadeen_osm::osm_io::{create_reader, create_writer, read, FileFormat};
 use vadeen_osm::RelationMember::Way;
 
 /// real_map.o5m is real_map.osm converted with osmconvert. There seems to be coordinate drifting

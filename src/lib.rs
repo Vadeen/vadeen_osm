@@ -96,6 +96,7 @@ impl OsmBuilder {
         self.add_node(coordinate, tags);
     }
 
+    /// First part is the outer polygon, rest of the parts is inner polygons.
     pub fn add_polygon(&mut self, parts: &[Vec<Coordinate>], tags: &[(String, String)]) {
         if parts.len() == 1 {
             self.add_polyline(&parts[0], tags);
