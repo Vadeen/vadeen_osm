@@ -80,7 +80,7 @@ impl StringReferenceTable {
             Ok(value)
         } else {
             Err(Error::new(
-                ErrorKind::Parse,
+                ErrorKind::ParseError,
                 Some(format!(
                     "String reference '{}' not found in table with size '{}'.",
                     idx,

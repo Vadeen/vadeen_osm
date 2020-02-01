@@ -20,11 +20,11 @@ enum Repr {
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    /// File format error. E.g. unsupported or unrecognized osm format.
-    FileFormat,
+    /// Invalid file format. E.g. unsupported or unrecognized osm format.
+    InvalidFileFormat,
 
     /// Parse error. E.g. invalid data in file.
-    Parse,
+    ParseError,
 
     /// IO error. E.g. file not found, permission denied.
     IO(io::Error),
@@ -66,8 +66,8 @@ impl ErrorKind {
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            ErrorKind::FileFormat => write!(f, "File format not recognized.")?,
-            ErrorKind::Parse => write!(f, "Unknown parse error occurred.")?,
+            ErrorKind::InvalidFileFormat => write!(f, "File format not recognized.")?,
+            ErrorKind::ParseError => write!(f, "Unknown parse error occurred.")?,
             IO(io_error) => match io_error.kind() {
                 io::ErrorKind::UnexpectedEof => write!(f, "Unexpected end of file.")?,
                 _ => write!(f, "Unknown IO error.")?,

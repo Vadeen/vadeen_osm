@@ -48,7 +48,7 @@ impl VarInt {
             // If we get to byte 9 we have more bits than 64.
             if i == 9 {
                 return Err(Error::new(
-                    ErrorKind::Parse,
+                    ErrorKind::ParseError,
                     Some("Varint overflow, read 9 bytes.".to_owned()),
                 ));
             }

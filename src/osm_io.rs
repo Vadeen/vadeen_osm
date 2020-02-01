@@ -218,7 +218,7 @@ impl TryFrom<&str> for FileFormat {
             Ok(format)
         } else {
             Err(Error::new(
-                ErrorKind::FileFormat,
+                ErrorKind::InvalidFileFormat,
                 Some(format!("'{}' is not a valid osm file format.", value)),
             ))
         }
@@ -243,7 +243,7 @@ impl TryFrom<&Path> for FileFormat {
             }
         }
         Err(Error::new(
-            ErrorKind::FileFormat,
+            ErrorKind::InvalidFileFormat,
             Some(format!(
                 "Could not determine format of '{}'.",
                 path.to_str().unwrap()

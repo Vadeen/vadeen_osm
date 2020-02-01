@@ -291,7 +291,7 @@ impl<R: BufRead> O5mDecoder<R> {
 
         if !s.is_char_boundary(1) || s.len() < 2 {
             return Err(Error::new(
-                ErrorKind::Parse,
+                ErrorKind::ParseError,
                 Some("Corrupt relation member reference data.".to_owned()),
             ));
         }
@@ -312,7 +312,7 @@ impl<R: BufRead> O5mDecoder<R> {
                 mem_role.to_owned(),
             )),
             s => Err(Error::new(
-                ErrorKind::Parse,
+                ErrorKind::ParseError,
                 Some(format!("Invalid relation member type '{}'.", s)),
             )),
         }

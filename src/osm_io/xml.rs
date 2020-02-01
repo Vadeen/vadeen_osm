@@ -9,11 +9,11 @@ mod writer;
 pub use self::reader::*;
 pub use self::writer::*;
 use crate::osm_io::error::Error;
-use crate::osm_io::error::ErrorKind::Parse;
+use crate::osm_io::error::ErrorKind::ParseError;
 
 impl From<quick_xml::Error> for Error {
     fn from(e: quick_xml::Error) -> Self {
-        Error::new(Parse, Some(e.to_string()))
+        Error::new(ParseError, Some(e.to_string()))
     }
 }
 
