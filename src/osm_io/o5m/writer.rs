@@ -210,15 +210,14 @@ impl O5mEncoder {
             let mem_role = m.role();
             let delta = self.delta_rel_member(m);
 
+            let mut mem_bytes = Vec::new();
+            mem_bytes.push(0x00);
+            mem_bytes.append(&mut mem_type.as_bytes().to_owned());
+            mem_bytes.append(&mut mem_role.as_bytes().to_owned());
+            mem_bytes.push(0x0);
+
             bytes.append(&mut VarInt::create_bytes(delta));
-            bytes.push(0x00);
-            for b in mem_type.bytes() {
-                bytes.push(b);
-            }
-            for b in mem_role.bytes() {
-                bytes.push(b);
-            }
-            bytes.push(0x00);
+            bytes.append(&mut self.string_table.reference(mem_bytes));
         }
         bytes
     }
@@ -416,16 +415,18 @@ mod tests {
     fn relation_bytes() {
         let expected: Vec<u8> = vec![
             0x12, // Relation type
-            0x29, // Length
+            0x2B, // Length
             0x80, 0x01, // Id, delta
             0x00, // Version
-            0x12, // Length of ref section
+            0x14, // Length of ref section
             0x08, // Ref id, delta
             0x00, 0x31, // Way
             0x6F, 0x75, 0x74, 0x65, 0x72, 0x00, // Outer
             0x08, // Ref id, delta
             0x00, 0x31, // Way
             0x69, 0x6e, 0x6e, 0x65, 0x72, 0x00, // Inner
+            0x08, // Ref id, delta
+            0x01, // String ref to way inner.
             // type=multipolygon
             0x00, 0x74, 0x79, 0x70, 0x65, 0x00, 0x6D, 0x75, 0x6C, 0x74, 0x69, 0x70, 0x6F, 0x6C,
             0x79, 0x67, 0x6F, 0x6E, 0x00,
@@ -435,6 +436,7 @@ mod tests {
             members: vec![
                 RelationMember::Way(4, "outer".to_owned()),
                 RelationMember::Way(8, "inner".to_owned()),
+                RelationMember::Way(12, "inner".to_owned()),
             ],
             meta: Meta {
                 tags: vec![("type", "multipolygon").into()],
