@@ -1,5 +1,5 @@
-use vadeen_osm::osm_io::write;
 use vadeen_osm::osm_io::error::Result;
+use vadeen_osm::osm_io::write;
 use vadeen_osm::OsmBuilder;
 
 fn main() -> Result<()> {
