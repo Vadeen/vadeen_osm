@@ -1,6 +1,6 @@
 [package]
 name = "vadeen_osm"
-version = "0.2.1"
+version = "0.2.2"
 license = "MIT"
 authors = ["Felix Stridsberg <felix.stridsberg@gmail.com>"]
 edition = "2018"
