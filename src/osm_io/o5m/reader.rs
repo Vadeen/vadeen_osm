@@ -1,5 +1,5 @@
-use super::varint::VarInt;
 use super::varint::ReadVarInt;
+use super::varint::VarInt;
 use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Result;

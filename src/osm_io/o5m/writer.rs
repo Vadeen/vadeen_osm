@@ -4,7 +4,7 @@ use std::io::Write;
 use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Error;
-use crate::osm_io::o5m::varint::VarInt;
+use crate::osm_io::o5m::varint::WriteVarInt;
 use crate::osm_io::o5m::Delta::{
     ChangeSet, Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, Time, WayRef,
 };
@@ -42,16 +42,15 @@ impl<W: Write> O5mWriter<W> {
     }
 
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Bounding_Box
-    fn write_bounding_box(&mut self, boundary: &Boundary) -> io::Result<()> {
+    fn write_bounding_box(&mut self, boundary: &Boundary) -> Result<()> {
         let mut bytes = Vec::new();
-        bytes.write(&VarInt::create_bytes(boundary.min.lon))?;
-        bytes.write(&VarInt::create_bytes(boundary.min.lat))?;
-        bytes.write(&VarInt::create_bytes(boundary.max.lon))?;
-        bytes.write(&VarInt::create_bytes(boundary.max.lat))?;
+        bytes.write_varint(boundary.min.lon)?;
+        bytes.write_varint(boundary.min.lat)?;
+        bytes.write_varint(boundary.max.lon)?;
+        bytes.write_varint(boundary.max.lat)?;
 
         self.inner.write_all(&[O5M_BOUNDING_BOX])?;
-        self.inner
-            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
+        self.inner.write_varint(bytes.len() as u64)?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -60,8 +59,7 @@ impl<W: Write> O5mWriter<W> {
     fn write_node(&mut self, node: &Node) -> Result<()> {
         let bytes = self.encoder.node_to_bytes(node)?;
         self.inner.write_all(&[O5M_NODE])?;
-        self.inner
-            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
+        self.inner.write_varint(bytes.len() as u64)?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -70,8 +68,7 @@ impl<W: Write> O5mWriter<W> {
     fn write_way(&mut self, way: &Way) -> Result<()> {
         let bytes = self.encoder.way_to_bytes(way)?;
         self.inner.write_all(&[O5M_WAY])?;
-        self.inner
-            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
+        self.inner.write_varint(bytes.len() as u64)?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -80,8 +77,7 @@ impl<W: Write> O5mWriter<W> {
     fn write_relation(&mut self, rel: &Relation) -> Result<()> {
         let bytes = self.encoder.relation_to_bytes(rel)?;
         self.inner.write_all(&[O5M_RELATION])?;
-        self.inner
-            .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
+        self.inner.write_varint(bytes.len() as u64)?;
         self.inner.write_all(&bytes)?;
         Ok(())
     }
@@ -142,10 +138,10 @@ impl O5mEncoder {
         let delta_coordinate = self.delta_coordinate(node.coordinate);
 
         let mut bytes = Vec::new();
-        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write_varint(delta_id)?;
         bytes.write(&self.meta_to_bytes(&node.meta)?)?;
-        bytes.write(&VarInt::create_bytes(delta_coordinate.lon))?;
-        bytes.write(&VarInt::create_bytes(delta_coordinate.lat))?;
+        bytes.write_varint(delta_coordinate.lon)?;
+        bytes.write_varint(delta_coordinate.lat)?;
 
         for tag in &node.meta.tags {
             bytes.write(&self.string_pair_to_bytes(&tag.key, &tag.value))?;
@@ -161,9 +157,9 @@ impl O5mEncoder {
         let ref_bytes = self.way_refs_to_bytes(&way.refs)?;
 
         let mut bytes = Vec::new();
-        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write_varint(delta_id)?;
         bytes.write(&self.meta_to_bytes(&way.meta)?)?;
-        bytes.write(&VarInt::create_bytes(ref_bytes.len() as u64))?;
+        bytes.write_varint(ref_bytes.len() as u64)?;
         bytes.write(&ref_bytes)?;
 
         for tag in &way.meta.tags {
@@ -178,7 +174,7 @@ impl O5mEncoder {
         let mut bytes = Vec::new();
         for i in refs {
             let delta = self.delta.encode(WayRef, *i);
-            bytes.write(&VarInt::create_bytes(delta))?;
+            bytes.write_varint(delta)?;
         }
         Ok(bytes)
     }
@@ -190,9 +186,9 @@ impl O5mEncoder {
         let mem_bytes = self.rel_members_to_bytes(&rel.members)?;
 
         let mut bytes = Vec::new();
-        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write_varint(delta_id)?;
         bytes.write(&self.meta_to_bytes(&rel.meta)?)?;
-        bytes.write(&VarInt::create_bytes(mem_bytes.len() as u64))?;
+        bytes.write_varint(mem_bytes.len() as u64)?;
         bytes.write(&mem_bytes)?;
 
         for tag in &rel.meta.tags {
@@ -216,7 +212,7 @@ impl O5mEncoder {
             mem_bytes.write(&mem_role.as_bytes().to_owned())?;
             mem_bytes.push(0x0);
 
-            bytes.write(&VarInt::create_bytes(delta))?;
+            bytes.write_varint(delta)?;
             bytes.write(&self.string_table.reference(mem_bytes))?;
         }
         Ok(bytes)
@@ -226,14 +222,14 @@ impl O5mEncoder {
     pub fn meta_to_bytes(&mut self, meta: &Meta) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         if let Some(version) = meta.version {
-            bytes.write(&VarInt::create_bytes(version))?;
+            bytes.write_varint(version)?;
 
             if let Some(author) = meta.author.as_ref() {
                 let delta_time = self.delta.encode(Time, author.created);
                 let delta_change_set = self.delta.encode(ChangeSet, author.change_set as i64);
 
-                bytes.write(&VarInt::create_bytes(delta_time))?;
-                bytes.write(&VarInt::create_bytes(delta_change_set))?;
+                bytes.write_varint(delta_time)?;
+                bytes.write_varint(delta_change_set)?;
                 bytes.write(&self.user_to_bytes(author.uid, &author.user)?)?;
             } else {
                 bytes.push(0x00); // No author info.
@@ -269,7 +265,7 @@ impl O5mEncoder {
     fn user_to_bytes(&mut self, uid: u64, username: &str) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes.push(0);
-        bytes.write(&VarInt::create_bytes(uid))?;
+        bytes.write_varint(uid)?;
 
         bytes.push(0);
         for byte in username.bytes() {

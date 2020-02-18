@@ -17,7 +17,7 @@
 //! See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
 
 use crate::osm_io::error::{Error, ErrorKind, Result};
-use std::io::Read;
+use std::io::{Read, Write};
 
 /// Represents a variable integer (signed or unsigned).
 #[derive(Debug)]
@@ -111,6 +111,16 @@ pub trait ReadVarInt: Read {
 /// All types that implements the Read trait gets the ReadVarInt methods.
 impl<R: Read + ?Sized> ReadVarInt for R {}
 
+pub trait WriteVarInt: Write {
+    fn write_varint<T: Into<VarInt>>(&mut self, i: T) -> Result<()> {
+        let varint: VarInt = i.into();
+        self.write(&varint.bytes)?;
+        Ok(())
+    }
+}
+
+impl<W: Write + ?Sized> WriteVarInt for W {}
+
 impl From<u32> for VarInt {
     fn from(value: u32) -> Self {
         VarInt::from(value as u64)
@@ -170,8 +180,8 @@ impl From<i64> for VarInt {
 
 #[cfg(test)]
 mod test_from_bytes {
-    use crate::osm_io::o5m::varint::VarInt;
     use crate::osm_io::o5m::varint::ReadVarInt;
+    use crate::osm_io::o5m::varint::VarInt;
 
     #[test]
     fn max_one_byte_uvarint() {
