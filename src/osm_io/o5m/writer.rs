@@ -44,10 +44,10 @@ impl<W: Write> O5mWriter<W> {
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Bounding_Box
     fn write_bounding_box(&mut self, boundary: &Boundary) -> io::Result<()> {
         let mut bytes = Vec::new();
-        bytes.append(&mut VarInt::create_bytes(boundary.min.lon));
-        bytes.append(&mut VarInt::create_bytes(boundary.min.lat));
-        bytes.append(&mut VarInt::create_bytes(boundary.max.lon));
-        bytes.append(&mut VarInt::create_bytes(boundary.max.lat));
+        bytes.write(&VarInt::create_bytes(boundary.min.lon))?;
+        bytes.write(&VarInt::create_bytes(boundary.min.lat))?;
+        bytes.write(&VarInt::create_bytes(boundary.max.lon))?;
+        bytes.write(&VarInt::create_bytes(boundary.max.lat))?;
 
         self.inner.write_all(&[O5M_BOUNDING_BOX])?;
         self.inner
@@ -57,8 +57,8 @@ impl<W: Write> O5mWriter<W> {
     }
 
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Node
-    fn write_node(&mut self, node: &Node) -> io::Result<()> {
-        let bytes = self.encoder.node_to_bytes(node);
+    fn write_node(&mut self, node: &Node) -> Result<()> {
+        let bytes = self.encoder.node_to_bytes(node)?;
         self.inner.write_all(&[O5M_NODE])?;
         self.inner
             .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
@@ -67,8 +67,8 @@ impl<W: Write> O5mWriter<W> {
     }
 
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Way
-    fn write_way(&mut self, way: &Way) -> io::Result<()> {
-        let bytes = self.encoder.way_to_bytes(way);
+    fn write_way(&mut self, way: &Way) -> Result<()> {
+        let bytes = self.encoder.way_to_bytes(way)?;
         self.inner.write_all(&[O5M_WAY])?;
         self.inner
             .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
@@ -77,8 +77,8 @@ impl<W: Write> O5mWriter<W> {
     }
 
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Relation
-    fn write_relation(&mut self, rel: &Relation) -> io::Result<()> {
-        let bytes = self.encoder.relation_to_bytes(rel);
+    fn write_relation(&mut self, rel: &Relation) -> Result<()> {
+        let bytes = self.encoder.relation_to_bytes(rel)?;
         self.inner.write_all(&[O5M_RELATION])?;
         self.inner
             .write_all(&VarInt::create_bytes(bytes.len() as u64))?;
@@ -137,73 +137,73 @@ impl O5mEncoder {
 
     /// Converts a node into a byte vector that can be written to file.
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Node
-    pub fn node_to_bytes(&mut self, node: &Node) -> Vec<u8> {
+    pub fn node_to_bytes(&mut self, node: &Node) -> Result<Vec<u8>> {
         let delta_id = self.delta.encode(Id, node.id);
         let delta_coordinate = self.delta_coordinate(node.coordinate);
 
         let mut bytes = Vec::new();
-        bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut self.meta_to_bytes(&node.meta));
-        bytes.append(&mut VarInt::create_bytes(delta_coordinate.lon));
-        bytes.append(&mut VarInt::create_bytes(delta_coordinate.lat));
+        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write(&self.meta_to_bytes(&node.meta)?)?;
+        bytes.write(&VarInt::create_bytes(delta_coordinate.lon))?;
+        bytes.write(&VarInt::create_bytes(delta_coordinate.lat))?;
 
         for tag in &node.meta.tags {
-            bytes.append(&mut self.string_pair_to_bytes(&tag.key, &tag.value));
+            bytes.write(&self.string_pair_to_bytes(&tag.key, &tag.value))?;
         }
 
-        bytes
+        Ok(bytes)
     }
 
     /// Converts a way into a byte vector that can be written to file.
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Way
-    pub fn way_to_bytes(&mut self, way: &Way) -> Vec<u8> {
+    pub fn way_to_bytes(&mut self, way: &Way) -> Result<Vec<u8>> {
         let delta_id = self.delta.encode(Id, way.id);
-        let mut ref_bytes = self.way_refs_to_bytes(&way.refs);
+        let ref_bytes = self.way_refs_to_bytes(&way.refs)?;
 
         let mut bytes = Vec::new();
-        bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut self.meta_to_bytes(&way.meta));
-        bytes.append(&mut VarInt::create_bytes(ref_bytes.len() as u64));
-        bytes.append(&mut ref_bytes);
+        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write(&self.meta_to_bytes(&way.meta)?)?;
+        bytes.write(&VarInt::create_bytes(ref_bytes.len() as u64))?;
+        bytes.write(&ref_bytes)?;
 
         for tag in &way.meta.tags {
-            bytes.append(&mut self.string_pair_to_bytes(&tag.key, &tag.value));
+            bytes.write(&self.string_pair_to_bytes(&tag.key, &tag.value))?;
         }
 
-        bytes
+        Ok(bytes)
     }
 
     /// Converts way references to bytes.
-    fn way_refs_to_bytes(&mut self, refs: &[i64]) -> Vec<u8> {
+    fn way_refs_to_bytes(&mut self, refs: &[i64]) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         for i in refs {
             let delta = self.delta.encode(WayRef, *i);
-            bytes.append(&mut VarInt::create_bytes(delta));
+            bytes.write(&VarInt::create_bytes(delta))?;
         }
-        bytes
+        Ok(bytes)
     }
 
     /// Converts a relation into a byte vector that can be written to file.
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Relation
-    pub fn relation_to_bytes(&mut self, rel: &Relation) -> Vec<u8> {
+    pub fn relation_to_bytes(&mut self, rel: &Relation) -> Result<Vec<u8>> {
         let delta_id = self.delta.encode(Id, rel.id);
-        let mut mem_bytes = self.rel_members_to_bytes(&rel.members);
+        let mem_bytes = self.rel_members_to_bytes(&rel.members)?;
 
         let mut bytes = Vec::new();
-        bytes.append(&mut VarInt::create_bytes(delta_id));
-        bytes.append(&mut self.meta_to_bytes(&rel.meta));
-        bytes.append(&mut VarInt::create_bytes(mem_bytes.len() as u64));
-        bytes.append(&mut mem_bytes);
+        bytes.write(&VarInt::create_bytes(delta_id))?;
+        bytes.write(&self.meta_to_bytes(&rel.meta)?)?;
+        bytes.write(&VarInt::create_bytes(mem_bytes.len() as u64))?;
+        bytes.write(&mem_bytes)?;
 
         for tag in &rel.meta.tags {
-            bytes.append(&mut self.string_pair_to_bytes(&tag.key, &tag.value));
+            bytes.write(&self.string_pair_to_bytes(&tag.key, &tag.value))?;
         }
 
-        bytes
+        Ok(bytes)
     }
 
     /// Converts relation members to bytes.
-    fn rel_members_to_bytes(&mut self, members: &[RelationMember]) -> Vec<u8> {
+    fn rel_members_to_bytes(&mut self, members: &[RelationMember]) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         for m in members {
             let mem_type = member_type(m);
@@ -212,36 +212,36 @@ impl O5mEncoder {
 
             let mut mem_bytes = Vec::new();
             mem_bytes.push(0x00);
-            mem_bytes.append(&mut mem_type.as_bytes().to_owned());
-            mem_bytes.append(&mut mem_role.as_bytes().to_owned());
+            mem_bytes.write(&mem_type.as_bytes().to_owned())?;
+            mem_bytes.write(&mem_role.as_bytes().to_owned())?;
             mem_bytes.push(0x0);
 
-            bytes.append(&mut VarInt::create_bytes(delta));
-            bytes.append(&mut self.string_table.reference(mem_bytes));
+            bytes.write(&VarInt::create_bytes(delta))?;
+            bytes.write(&self.string_table.reference(mem_bytes))?;
         }
-        bytes
+        Ok(bytes)
     }
 
     /// Converts meta to bytes. It's positioned directly after the id of the element.
-    pub fn meta_to_bytes(&mut self, meta: &Meta) -> Vec<u8> {
+    pub fn meta_to_bytes(&mut self, meta: &Meta) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         if let Some(version) = meta.version {
-            bytes.append(&mut VarInt::create_bytes(version));
+            bytes.write(&VarInt::create_bytes(version))?;
 
             if let Some(author) = meta.author.as_ref() {
                 let delta_time = self.delta.encode(Time, author.created);
                 let delta_change_set = self.delta.encode(ChangeSet, author.change_set as i64);
 
-                bytes.append(&mut VarInt::create_bytes(delta_time));
-                bytes.append(&mut VarInt::create_bytes(delta_change_set));
-                bytes.append(&mut self.user_to_bytes(author.uid, &author.user));
+                bytes.write(&VarInt::create_bytes(delta_time))?;
+                bytes.write(&VarInt::create_bytes(delta_change_set))?;
+                bytes.write(&self.user_to_bytes(author.uid, &author.user)?)?;
             } else {
                 bytes.push(0x00); // No author info.
             }
         } else {
             bytes.push(0x00); // No version, no timestamp and no author info.
         }
-        bytes
+        Ok(bytes)
     }
 
     /// Converts a string pair into a byte vector that can be written to file.
@@ -266,10 +266,10 @@ impl O5mEncoder {
 
     /// Converts a user to a byte vector that can be written to file.
     /// See: https://wiki.openstreetmap.org/wiki/O5m#Strings
-    fn user_to_bytes(&mut self, uid: u64, username: &str) -> Vec<u8> {
+    fn user_to_bytes(&mut self, uid: u64, username: &str) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes.push(0);
-        bytes.append(&mut VarInt::create_bytes(uid));
+        bytes.write(&VarInt::create_bytes(uid))?;
 
         bytes.push(0);
         for byte in username.bytes() {
@@ -277,7 +277,7 @@ impl O5mEncoder {
         }
         bytes.push(0);
 
-        self.string_table.reference(bytes)
+        Ok(self.string_table.reference(bytes))
     }
 
     /// Relation members have delta split on the relation type.
@@ -334,12 +334,12 @@ mod tests {
         );
         assert_eq!(references.string_pair_to_bytes("oneway", "yes"), vec![0x02]);
         assert_eq!(
-            references.user_to_bytes(1020, "John"),
+            references.user_to_bytes(1020, "John").unwrap(),
             vec![0x00, 0xfc, 0x07, 0x00, 0x4a, 0x6f, 0x68, 0x6e, 0x00]
         );
         assert_eq!(references.string_pair_to_bytes("atm", "no"), vec![0x02]);
         assert_eq!(references.string_pair_to_bytes("oneway", "yes"), vec![0x03]);
-        assert_eq!(references.user_to_bytes(1020, "John"), vec![0x01]);
+        assert_eq!(references.user_to_bytes(1020, "John").unwrap(), vec![0x01]);
     }
 
     #[test]
