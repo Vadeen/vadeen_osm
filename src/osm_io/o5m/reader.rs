@@ -1,4 +1,5 @@
 use super::varint::VarInt;
+use super::varint::ReadVarInt;
 use super::*;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Result;
@@ -203,12 +204,12 @@ impl<R: BufRead> O5mDecoder<R> {
 
     /// Wrapper for easy reading i64 varint.
     fn read_varint(&mut self) -> Result<i64> {
-        Ok(VarInt::read(&mut self.inner)?.into_i64())
+        Ok(self.inner.read_varint()?.into_i64())
     }
 
     /// Wrapper for easy reading u64 varint.
     fn read_uvarint(&mut self) -> Result<u64> {
-        Ok(VarInt::read(&mut self.inner)?.into_u64())
+        Ok(self.inner.read_varint()?.into_u64())
     }
 
     /// Read one single byte.
@@ -321,7 +322,7 @@ impl<R: BufRead> O5mDecoder<R> {
     /// Read real string pairs. I.e. data that is actually a pair of 2 strings, not single strings
     /// or a user which consists of one int and a string.
     fn read_string_pair(&mut self) -> Result<(String, String)> {
-        let reference = VarInt::read(&mut self.inner)?.into_u64();
+        let reference = self.inner.read_varint()?.into_u64();
         if reference != 0 {
             let bytes = self.string_table.get(reference)?;
             Ok(Self::bytes_to_string_pair(bytes))

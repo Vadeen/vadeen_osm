@@ -12,6 +12,8 @@
 //! The `From` trait implementations respects the signedness of the input type. I.e. i32 and i64
 //! are encoded as a signed variable integer, u32 and u64 as unsigned.
 //!
+//! The trait `ReadVarInt` adds read_varint() to all readers for easy reading of varints.
+//!
 //! See: https://wiki.openstreetmap.org/wiki/O5m#Numbers
 
 use crate::osm_io::error::{Error, ErrorKind, Result};
@@ -39,30 +41,6 @@ impl VarInt {
 
     pub fn bytes(self) -> Vec<u8> {
         self.bytes
-    }
-
-    /// Reads a varint from a reader.
-    pub fn read<R: Read>(reader: &mut R) -> Result<Self> {
-        let mut bytes = Vec::new();
-        for i in 0..10 {
-            // If we get to byte 9 we have more bits than 64.
-            if i == 9 {
-                return Err(Error::new(
-                    ErrorKind::ParseError,
-                    Some("Varint overflow, read 9 bytes.".to_owned()),
-                ));
-            }
-
-            let mut buf = [0u8; 1];
-            reader.read_exact(&mut buf)?;
-
-            let byte = buf[0];
-            bytes.push(byte);
-            if byte & 0x80 == 0 {
-                break;
-            }
-        }
-        Ok(VarInt { bytes })
     }
 
     /// Turns VarInt into an signed int.
@@ -101,6 +79,37 @@ impl VarInt {
         value
     }
 }
+
+/// Extends [`Read`] with methods for reading varints.
+///
+/// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+pub trait ReadVarInt: Read {
+    fn read_varint(&mut self) -> Result<VarInt> {
+        let mut bytes = Vec::new();
+        for i in 0..10 {
+            // If we get to byte 9 we have more bits than 64.
+            if i == 9 {
+                return Err(Error::new(
+                    ErrorKind::ParseError,
+                    Some("Varint overflow, read 9 bytes.".to_owned()),
+                ));
+            }
+
+            let mut buf = [0u8; 1];
+            self.read_exact(&mut buf)?;
+
+            let byte = buf[0];
+            bytes.push(byte);
+            if byte & 0x80 == 0 {
+                break;
+            }
+        }
+        Ok(VarInt { bytes })
+    }
+}
+
+/// All types that implements the Read trait gets the ReadVarInt methods.
+impl<R: Read + ?Sized> ReadVarInt for R {}
 
 impl From<u32> for VarInt {
     fn from(value: u32) -> Self {
@@ -162,13 +171,7 @@ impl From<i64> for VarInt {
 #[cfg(test)]
 mod test_from_bytes {
     use crate::osm_io::o5m::varint::VarInt;
-
-    #[test]
-    fn read_one_byte_uvarint() {
-        let data = vec![0x05];
-        let varint = VarInt::read(&mut data.as_slice()).unwrap();
-        assert_eq!(varint.into_u64(), 5);
-    }
+    use crate::osm_io::o5m::varint::ReadVarInt;
 
     #[test]
     fn max_one_byte_uvarint() {
@@ -179,7 +182,7 @@ mod test_from_bytes {
     #[test]
     fn read_two_bytes_uvarint() {
         let data = vec![0xC3, 0x02];
-        let varint = VarInt::read(&mut data.as_slice()).unwrap();
+        let varint = data.as_slice().read_varint().unwrap();
         assert_eq!(varint.into_u64(), 323);
     }
 
@@ -192,7 +195,7 @@ mod test_from_bytes {
     #[test]
     fn read_one_byte_positive_varint() {
         let data = vec![0x08];
-        let varint = VarInt::read(&mut data.as_slice()).unwrap();
+        let varint = data.as_slice().read_varint().unwrap();
         assert_eq!(varint.into_i64(), 4);
     }
 
@@ -205,7 +208,7 @@ mod test_from_bytes {
     #[test]
     fn read_four_byte_positive_varint() {
         let data = vec![0x94, 0xfe, 0xd2, 0x05];
-        let varint = VarInt::read(&mut data.as_slice()).unwrap();
+        let varint = data.as_slice().read_varint().unwrap();
         assert_eq!(varint.into_i64(), 5922698);
     }
 
@@ -218,7 +221,7 @@ mod test_from_bytes {
     #[test]
     fn too_many_bytes() {
         let data = vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-        let error = VarInt::read(&mut data.as_slice()).unwrap_err();
+        let error = data.as_slice().read_varint().unwrap_err();
         assert_eq!(error.to_string(), "Varint overflow, read 9 bytes.")
     }
 }
