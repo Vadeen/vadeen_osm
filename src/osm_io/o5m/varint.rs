@@ -114,7 +114,7 @@ impl<R: Read + ?Sized> ReadVarInt for R {}
 pub trait WriteVarInt: Write {
     fn write_varint<T: Into<VarInt>>(&mut self, i: T) -> Result<()> {
         let varint: VarInt = i.into();
-        self.write(&varint.bytes)?;
+        self.write_all(&varint.bytes)?;
         Ok(())
     }
 }

@@ -165,7 +165,7 @@ impl O5mEncoder {
         writer.write_varint(delta_id)?;
         self.write_meta(writer, &way.meta)?;
         writer.write_varint(ref_bytes.len() as u64)?;
-        writer.write(&ref_bytes)?;
+        writer.write_all(&ref_bytes)?;
 
         for tag in &way.meta.tags {
             self.write_tag(writer, &tag)?;
@@ -192,7 +192,7 @@ impl O5mEncoder {
         writer.write_varint(self.delta.encode(Id, rel.id))?;
         self.write_meta(writer, &rel.meta)?;
         writer.write_varint(mem_bytes.len() as u64)?;
-        writer.write(&mem_bytes)?;
+        writer.write_all(&mem_bytes)?;
 
         for tag in &rel.meta.tags {
             self.write_tag(writer, &tag)?;
@@ -213,13 +213,13 @@ impl O5mEncoder {
             let delta = self.delta_rel_member(m);
 
             let mut mem_bytes = Vec::new();
-            mem_bytes.write(&[0x00])?;
-            mem_bytes.write(&mem_type.as_bytes().to_owned())?;
-            mem_bytes.write(&mem_role.as_bytes().to_owned())?;
-            mem_bytes.write(&[0x00])?;
+            mem_bytes.write_all(&[0x00])?;
+            mem_bytes.write_all(&mem_type.as_bytes().to_owned())?;
+            mem_bytes.write_all(&mem_role.as_bytes().to_owned())?;
+            mem_bytes.write_all(&[0x00])?;
 
             writer.write_varint(delta)?;
-            writer.write(&self.string_table.reference(mem_bytes))?;
+            writer.write_all(&self.string_table.reference(mem_bytes))?;
         }
         Ok(())
     }
@@ -237,10 +237,10 @@ impl O5mEncoder {
                 writer.write_varint(delta_change_set)?;
                 self.write_user(writer, author.uid, &author.user)?;
             } else {
-                writer.write(&[0x00])?; // No author info.
+                writer.write_all(&[0x00])?; // No author info.
             }
         } else {
-            writer.write(&[0x00])?; // No version, no timestamp and no author info.
+            writer.write_all(&[0x00])?; // No version, no timestamp and no author info.
         }
         Ok(())
     }
@@ -248,7 +248,7 @@ impl O5mEncoder {
     /// Write tag as string pair to `writer`.
     fn write_tag<W: Write>(&mut self, writer: &mut W, tag: &Tag) -> Result<()> {
         let bytes = self.string_pair_to_bytes(&tag.key, &tag.value);
-        writer.write(&bytes)?;
+        writer.write_all(&bytes)?;
         Ok(())
     }
 
@@ -266,7 +266,7 @@ impl O5mEncoder {
         bytes.push(0);
 
         let bytes = self.string_table.reference(bytes);
-        writer.write(&bytes)?;
+        writer.write_all(&bytes)?;
 
         Ok(())
     }

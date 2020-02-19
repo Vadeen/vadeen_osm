@@ -169,7 +169,7 @@ impl OsmBuilder {
         let id = self.next_id();
 
         let meta = Meta {
-            tags: tags.into_iter().map(|t| t.into()).collect(),
+            tags: tags.into_iter().map(|t| t).collect(),
             ..Default::default()
         };
         self.osm.add_relation(Relation { id, members, meta });
