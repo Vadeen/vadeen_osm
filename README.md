@@ -8,6 +8,16 @@
 Vadeen OSM is a library for reading and writing [`Open Street Map`] files.
 Currently support xml and o5m. Pbf in the near future.
 
+## Goal
+There is many [`great tools`] that works with Open Street Map files, for example [`mkgmap`] which can convert OSM maps to a
+format compatible with GPS devices.
+
+This project aims to be an easy to use library to compose OSM maps from other map sources. For example in Sweden the
+[`Lantmäteriet`] (The Swedish National Land Survey) provides high quality Creative Common licensed [`map data for free`].
+
+The main goal of this project is not to manage OSM data, but rather give 3rd party maps access to the OSM ecosystem.
+The project aims to be fully compliant with OSM however, so managing plain OSM maps should be possible.
+
 ## Examples
 To run the examples in the `examples/` folder run `cargo build --examples` and look in the
 `target/debug/examples/` folder for the binaries.
@@ -110,3 +120,7 @@ osm.add_relation(Relation {
 ```
 
 [`Open Street Map`]: https://wiki.openstreetmap.org/wiki/OSM_file_formats
+[`mkgmap`]: http://www.mkgmap.org.uk/
+[`great tools`]: https://wiki.openstreetmap.org/wiki/Software/Desktop
+[`Lantmäteriet`]: https://en.wikipedia.org/wiki/Lantm%C3%A4teriet
+[`map data for free`]: https://www.lantmateriet.se/en/maps-and-geographic-information/open-geodata/
