@@ -39,11 +39,11 @@ use std::collections::HashMap;
 /// let mut builder = OsmBuilder::default();
 ///
 /// // Add a point, represented as one node.
-/// builder.add_point((2.0, 2.0).into(), vec![("power", "tower").into()]);
+/// builder.add_point((2.0, 2.0), vec![("power", "tower").into()]);
 ///
 /// // Add a poly line, represented as two nodes and a way.
 /// builder.add_polyline(
-///     vec![(2.0, 2.0).into(), (4.0, 5.0).into()],
+///     vec![(2.0, 2.0), (4.0, 5.0)],
 ///     vec![("power", "line").into()]
 /// );
 ///
@@ -51,7 +51,7 @@ use std::collections::HashMap;
 /// builder.add_polygon(
 ///     vec![
 ///         // Outer polygon
-///         vec![(1.0, 1.0).into(), (10.0, 10.0).into(), (5.0, 5.0).into(), (1.0, 1.0).into()],
+///         vec![(1.0, 1.0), (10.0, 10.0), (5.0, 5.0), (1.0, 1.0)],
 ///         // If you want inner polygons, add them here...
 ///         // Each inner polygon is represented as a way, the polygons are connected by a relation.
 ///     ],
@@ -104,13 +104,13 @@ impl OsmBuilder {
         self.osm
     }
 
-    pub fn add_point(&mut self, coordinate: Coordinate, tags: Vec<Tag>) {
-        self.add_node(coordinate, tags);
+    pub fn add_point<C: Into<Coordinate>>(&mut self, coordinate: C, tags: Vec<Tag>) {
+        self.add_node(coordinate.into(), tags);
     }
 
     /// First part is the outer polygon, rest of the parts is inner polygons.
     /// `parts` must not be empty or a panic will occur.
-    pub fn add_polygon(&mut self, mut parts: Vec<Vec<Coordinate>>, tags: Vec<Tag>) {
+    pub fn add_polygon<C: Into<Coordinate>>(&mut self, mut parts: Vec<Vec<C>>, tags: Vec<Tag>) {
         if parts.len() == 1 {
             self.add_polyline(parts.pop().unwrap(), tags);
         } else {
@@ -118,7 +118,7 @@ impl OsmBuilder {
         }
     }
 
-    pub fn add_polyline(&mut self, coordinates: Vec<Coordinate>, tags: Vec<Tag>) -> i64 {
+    pub fn add_polyline<C: Into<Coordinate>>(&mut self, coordinates: Vec<C>, tags: Vec<Tag>) -> i64 {
         let refs = self.add_nodes(coordinates);
         let id = self.next_id();
         let meta = Meta {
@@ -129,7 +129,7 @@ impl OsmBuilder {
         id
     }
 
-    fn add_multipolygon(&mut self, parts: Vec<Vec<Coordinate>>, mut tags: Vec<Tag>) {
+    fn add_multipolygon<C: Into<Coordinate>>(&mut self, parts: Vec<Vec<C>>, mut tags: Vec<Tag>) {
         let mut polygon_ids = Vec::new();
         for part in parts {
             polygon_ids.push(self.add_polyline(part, vec![]));
@@ -157,10 +157,10 @@ impl OsmBuilder {
         self.osm.add_relation(Relation { id, members, meta });
     }
 
-    fn add_nodes(&mut self, coordinates: Vec<Coordinate>) -> Vec<i64> {
+    fn add_nodes<C: Into<Coordinate>>(&mut self, coordinates: Vec<C>) -> Vec<i64> {
         coordinates
             .into_iter()
-            .map(|c| self.add_node(c, vec![]))
+            .map(|c| self.add_node(c.into(), vec![]))
             .collect()
     }
 
