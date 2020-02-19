@@ -14,7 +14,6 @@ exclude = ["/.travis.yml"]
 
 [badges]
 travis-ci = { repository = "FelixStridsberg/vadeen_osm" }
-codecov = { repository = "FelixStridsberg/vadeen_osm" }
 
 [dependencies]
 chrono = "0.4"
