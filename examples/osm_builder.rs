@@ -26,17 +26,14 @@ fn main() -> Result<()> {
             ],
             // Add more inner polygons here.
         ],
-        vec![("natural", "water").into()],
+        vec![("natural", "water")],
     );
 
     // Add polyline to the map.
-    builder.add_polyline(
-        vec![(66.29, 1.2), (64.43, 1.2)],
-        vec![("power", "line").into()],
-    );
+    builder.add_polyline(vec![(66.29, 1.2), (64.43, 1.2)], vec![("power", "line")]);
 
     // Add point
-    builder.add_point((66.19, 1.3), vec![("power", "tower").into()]);
+    builder.add_point((66.19, 1.3), vec![("power", "tower")]);
 
     // Build into Osm structure.
     let osm = builder.build();
