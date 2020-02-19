@@ -81,8 +81,69 @@ write("example_map.osm", &osm)?;
 write("example_map.o5m", &osm)?;
 ```
 
+## Custom data
+The builder can handle all kind of data as long as it has implemented the correct `Into` traits.
+
+For example if you have a custom tag type `MyTag` and a custom coordinate type `MyCoordinate` you can use them
+seamlessly with the builder as long as you implement the appropriate `Into<Tag>` and `Into<Coordinate>`.
+```rust
+// Your custom tag.
+struct MyTag {
+    key: String,
+    value: String,
+}
+
+// Your custom coordinate type.
+struct MyCoordinate {
+    lat: f64,
+    lon: f64,
+}
+
+// All you have to do is to implement the Into traits.
+impl Into<Coordinate> for MyCoordinate {
+    fn into(self) -> Coordinate {
+        Coordinate::new(self.lat, self.lon)
+    }
+}
+
+impl Into<Tag> for MyTag {
+    fn into(self) -> Tag {
+        Tag {
+            key: self.key,
+            value: self.value,
+        }
+    }
+}
+
+// Then you can use them with the builder:
+let mut builder = OsmBuilder::default();
+
+// Add a polygon to the map.
+builder.add_polygon(
+    vec![
+        vec![
+            // Outer polygon
+            MyCoordinate::new(66.29, -3.177),
+            MyCoordinate::new(66.29, -0.9422),
+            MyCoordinate::new(64.43, -0.9422),
+            MyCoordinate::new(64.43, -3.177),
+            MyCoordinate::new(66.29, -3.177),
+        ],
+        // Add inner polygons here.
+    ],
+    vec![MyTag::new("natural", "water")],
+);
+
+// Build into Osm structure.
+let osm = builder.build();
+
+// Write to file in the xml format.
+write("example_map.osm", &osm)?;
+```
+
 ## Create a map without builder
 When not using the builder you have to keep track of all the ids your self.
+This is only recommended if you work with actual OSM data, or if you want to break the rules of the `OsmBuilder`.
 ```rust
 let mut osm = Osm::default();
 
