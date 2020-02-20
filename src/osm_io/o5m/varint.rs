@@ -42,42 +42,6 @@ impl VarInt {
     pub fn bytes(self) -> Vec<u8> {
         self.bytes
     }
-
-    /// Turns VarInt into an signed int.
-    pub fn into_i64(mut self) -> i64 {
-        let (first, rest) = self.bytes.split_first().unwrap();
-        let byte = *first as u64;
-        let negative = (byte & 0x01) != 0x00;
-        let mut value = (byte & 0x7E) >> 1;
-
-        // If first bit is set, there is more bytes in the same format as uvarint.
-        if (byte & 0x80) != 0x00 {
-            self.bytes = rest.to_vec();
-            value |= self.into_u64() << 6;
-        }
-
-        let value = value as i64;
-        if negative {
-            -value - 1
-        } else {
-            value
-        }
-    }
-
-    /// Turns VarInt into an unsigned int.
-    pub fn into_u64(self) -> u64 {
-        let mut value = 0;
-        for (n, _) in self.bytes.iter().enumerate() {
-            // 9*7 = 63 bits. We can store 64 without overflow.
-            let byte = self.bytes[n] as u64;
-            value |= (byte & 0x7F) << (7 * (n as u64));
-
-            if byte & 0x80 == 0 {
-                break;
-            }
-        }
-        value
-    }
 }
 
 /// Extends [`Read`] with methods for reading varints.
@@ -120,6 +84,44 @@ pub trait WriteVarInt: Write {
 }
 
 impl<W: Write + ?Sized> WriteVarInt for W {}
+
+impl From<VarInt> for i64 {
+    fn from(mut vi: VarInt) -> Self {
+        let (first, rest) = vi.bytes.split_first().unwrap();
+        let byte = *first as u64;
+        let negative = (byte & 0x01) != 0x00;
+        let mut value = (byte & 0x7E) >> 1;
+
+        // If first bit is set, there is more bytes in the same format as uvarint.
+        if (byte & 0x80) != 0x00 {
+            vi.bytes = rest.to_vec();
+            value |= (Into::<u64>::into(vi)) << 6;
+        }
+
+        let value = value as i64;
+        if negative {
+            -value - 1
+        } else {
+            value
+        }
+    }
+}
+
+impl From<VarInt> for u64 {
+    fn from(vi: VarInt) -> Self {
+        let mut value = 0;
+        for (n, _) in vi.bytes.iter().enumerate() {
+            // 9*7 = 63 bits. We can store 64 without overflow.
+            let byte = vi.bytes[n] as u64;
+            value |= (byte & 0x7F) << (7 * (n as u64));
+
+            if byte & 0x80 == 0 {
+                break;
+            }
+        }
+        value
+    }
+}
 
 impl From<u32> for VarInt {
     fn from(value: u32) -> Self {
@@ -186,46 +188,46 @@ mod test_from_bytes {
     #[test]
     fn max_one_byte_uvarint() {
         let varint = VarInt::new(vec![0x7F]);
-        assert_eq!(varint.into_u64(), 127);
+        assert_eq!(Into::<u64>::into(varint), 127);
     }
 
     #[test]
     fn read_two_bytes_uvarint() {
         let data = vec![0xC3, 0x02];
         let varint = data.as_slice().read_varint().unwrap();
-        assert_eq!(varint.into_u64(), 323);
+        assert_eq!(Into::<u64>::into(varint), 323);
     }
 
     #[test]
     fn three_byte_uvarint() {
         let varint = VarInt::new(vec![0x80, 0x80, 0x01]);
-        assert_eq!(varint.into_u64(), 16384);
+        assert_eq!(Into::<u64>::into(varint), 16384);
     }
 
     #[test]
     fn read_one_byte_positive_varint() {
         let data = vec![0x08];
         let varint = data.as_slice().read_varint().unwrap();
-        assert_eq!(varint.into_i64(), 4);
+        assert_eq!(Into::<i64>::into(varint), 4);
     }
 
     #[test]
     fn one_byte_negative_varint() {
         let varint = VarInt::new(vec![0x03]);
-        assert_eq!(varint.into_i64(), -2);
+        assert_eq!(Into::<i64>::into(varint), -2);
     }
 
     #[test]
     fn read_four_byte_positive_varint() {
         let data = vec![0x94, 0xfe, 0xd2, 0x05];
         let varint = data.as_slice().read_varint().unwrap();
-        assert_eq!(varint.into_i64(), 5922698);
+        assert_eq!(Into::<i64>::into(varint), 5922698);
     }
 
     #[test]
     fn two_byte_negative_varint() {
         let varint = VarInt::new(vec![0x81, 0x01]);
-        assert_eq!(varint.into_i64(), -65);
+        assert_eq!(Into::<i64>::into(varint), -65);
     }
 
     #[test]

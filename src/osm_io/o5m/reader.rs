@@ -204,12 +204,12 @@ impl<R: BufRead> O5mDecoder<R> {
 
     /// Wrapper for easy reading i64 varint.
     fn read_varint(&mut self) -> Result<i64> {
-        Ok(self.inner.read_varint()?.into_i64())
+        Ok(self.inner.read_varint()?.into())
     }
 
     /// Wrapper for easy reading u64 varint.
     fn read_uvarint(&mut self) -> Result<u64> {
-        Ok(self.inner.read_varint()?.into_u64())
+        Ok(self.inner.read_varint()?.into())
     }
 
     /// Read one single byte.
@@ -254,7 +254,7 @@ impl<R: BufRead> O5mDecoder<R> {
     /// Turns bytes into uid and username.
     fn bytes_to_user(bytes: &[u8]) -> (u64, String) {
         let (uid_bytes, user_bytes) = Self::split_string_bytes(&bytes);
-        let uid = VarInt::new(Vec::from(uid_bytes)).into_u64();
+        let uid: u64 = VarInt::new(Vec::from(uid_bytes)).into();
         let user = String::from_utf8_lossy(&user_bytes).into_owned();
         (uid, user)
     }
@@ -322,7 +322,7 @@ impl<R: BufRead> O5mDecoder<R> {
     /// Read real string pairs. I.e. data that is actually a pair of 2 strings, not single strings
     /// or a user which consists of one int and a string.
     fn read_string_pair(&mut self) -> Result<(String, String)> {
-        let reference = self.inner.read_varint()?.into_u64();
+        let reference: u64 = self.inner.read_varint()?.into();
         if reference != 0 {
             let bytes = self.string_table.get(reference)?;
             Ok(Self::bytes_to_string_pair(bytes))
