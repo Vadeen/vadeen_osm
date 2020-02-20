@@ -95,14 +95,14 @@ pub enum FileFormat {
 }
 
 /// Writer for the osm formats.
-pub trait OsmWriter<W: Write> {
+pub trait OsmWrite<W: Write> {
     fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error>;
 
     fn into_inner(self: Box<Self>) -> W;
 }
 
 /// Reader for the osm formats.
-pub trait OsmReader {
+pub trait OsmRead {
     fn read(&mut self) -> std::result::Result<Osm, Error>;
 }
 
@@ -182,7 +182,7 @@ pub fn write<P: AsRef<Path>>(path: P, osm: &Osm) -> Result<()> {
 pub fn create_reader<'a, R: BufRead + 'a>(
     reader: R,
     format: FileFormat,
-) -> Box<dyn OsmReader + 'a> {
+) -> Box<dyn OsmRead + 'a> {
     match format {
         FileFormat::Xml => Box::new(XmlReader::new(reader)),
         FileFormat::O5m => Box::new(O5mReader::new(reader)),
@@ -216,7 +216,7 @@ pub fn create_reader<'a, R: BufRead + 'a>(
 pub fn create_writer<'a, W: Write + 'a>(
     writer: W,
     format: FileFormat,
-) -> Box<dyn OsmWriter<W> + 'a> {
+) -> Box<dyn OsmWrite<W> + 'a> {
     match format {
         FileFormat::O5m => Box::new(O5mWriter::new(writer)),
         FileFormat::Xml => Box::new(XmlWriter::new(writer)),

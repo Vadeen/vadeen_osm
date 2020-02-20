@@ -8,7 +8,7 @@ use crate::osm_io::o5m::varint::WriteVarInt;
 use crate::osm_io::o5m::Delta::{
     ChangeSet, Id, Lat, Lon, RelNodeRef, RelRelRef, RelWayRef, Time, WayRef,
 };
-use crate::osm_io::OsmWriter;
+use crate::osm_io::OsmWrite;
 use crate::{Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 
 /// A writer for the o5m binary format.
@@ -89,7 +89,7 @@ impl<W: Write> O5mWriter<W> {
     }
 }
 
-impl<W: Write> OsmWriter<W> for O5mWriter<W> {
+impl<W: Write> OsmWrite<W> for O5mWriter<W> {
     fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error> {
         self.reset()?;
         self.inner.write_all(&[O5M_HEADER])?;

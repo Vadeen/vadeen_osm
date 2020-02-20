@@ -5,7 +5,7 @@ use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::Result;
 use crate::osm_io::error::{Error, ErrorKind};
 use crate::osm_io::o5m::Delta::*;
-use crate::osm_io::OsmReader;
+use crate::osm_io::OsmRead;
 use crate::{AuthorInformation, Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use std::io::{BufRead, Read, Take};
 
@@ -410,7 +410,7 @@ impl<R: BufRead> O5mDecoder<R> {
     }
 }
 
-impl<R: BufRead> OsmReader for O5mReader<R> {
+impl<R: BufRead> OsmRead for O5mReader<R> {
     fn read(&mut self) -> std::result::Result<Osm, Error> {
         let mut osm = Osm::default();
 
@@ -437,7 +437,7 @@ impl<R: BufRead> OsmReader for O5mReader<R> {
 mod test {
     use crate::geo::Coordinate;
     use crate::osm_io::o5m::O5mReader;
-    use crate::osm_io::OsmReader;
+    use crate::osm_io::OsmRead;
     use crate::{AuthorInformation, Meta, Node, Relation, RelationMember, Way};
     use std::io::BufReader;
 

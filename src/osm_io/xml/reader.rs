@@ -3,7 +3,7 @@ use super::quick_xml::Reader;
 use crate::geo::{Boundary, Coordinate};
 use crate::osm_io::error::ErrorKind::ParseError;
 use crate::osm_io::error::{Error, Result};
-use crate::osm_io::OsmReader;
+use crate::osm_io::OsmRead;
 use crate::{AuthorInformation, Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use quick_xml::events::{BytesStart, Event};
 use std::collections::HashMap;
@@ -262,7 +262,7 @@ impl<R: BufRead> XmlReader<R> {
     }
 }
 
-impl<R: BufRead> OsmReader for XmlReader<R> {
+impl<R: BufRead> OsmRead for XmlReader<R> {
     fn read(&mut self) -> std::result::Result<Osm, Error> {
         let mut osm = Osm::default();
         loop {
@@ -349,7 +349,7 @@ mod tests {
     use crate::geo::{Boundary, Coordinate};
     use crate::osm_io::error::ErrorKind;
     use crate::osm_io::xml::XmlReader;
-    use crate::osm_io::OsmReader;
+    use crate::osm_io::OsmRead;
     use crate::{AuthorInformation, Meta, Node, Relation, RelationMember, Way};
 
     #[test]

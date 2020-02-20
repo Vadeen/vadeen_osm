@@ -3,7 +3,7 @@ use super::quick_xml::events::{BytesDecl, BytesEnd, BytesStart, Event};
 use super::quick_xml::Writer;
 use crate::geo::Boundary;
 use crate::osm_io::error::{Error, Result};
-use crate::osm_io::OsmWriter;
+use crate::osm_io::OsmWrite;
 use crate::{Meta, Node, Osm, Relation, RelationMember, Tag, Way};
 use std::io::Write;
 
@@ -161,7 +161,7 @@ impl<W: Write> XmlWriter<W> {
     }
 }
 
-impl<W: Write> OsmWriter<W> for XmlWriter<W> {
+impl<W: Write> OsmWrite<W> for XmlWriter<W> {
     fn write(&mut self, osm: &Osm) -> std::result::Result<(), Error> {
         self.write_start()?;
 
