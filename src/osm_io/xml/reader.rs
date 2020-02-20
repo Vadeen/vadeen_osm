@@ -172,7 +172,6 @@ impl<R: BufRead> XmlReader<R> {
     pub fn new(inner: R) -> XmlReader<R> {
         XmlReader {
             reader: Reader::from_reader(inner),
-
             line: 1,
         }
     }
