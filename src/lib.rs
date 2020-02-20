@@ -63,7 +63,7 @@ use std::collections::HashMap;
 /// assert_eq!(osm.ways.len(), 2);
 /// assert_eq!(osm.relations.len(), 0);
 ///
-/// assert_eq!(osm.boundary, Some(Boundary::new((1.0, 1.0).into(), (10.0, 10.0).into())));
+/// assert_eq!(osm.boundary, Some(Boundary::new((1.0, 1.0), (10.0, 10.0))));
 /// ```
 ///
 /// [`Osm`]: struct.Osm.html

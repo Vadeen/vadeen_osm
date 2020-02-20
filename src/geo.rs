@@ -120,10 +120,10 @@ impl From<(f64, f64)> for Coordinate {
 }
 
 impl Boundary {
-    pub fn new(min: Coordinate, max: Coordinate) -> Boundary {
+    pub fn new<C: Into<Coordinate>>(min: C, max: C) -> Boundary {
         Boundary {
-            min,
-            max,
+            min: min.into(),
+            max: max.into(),
             freeze: false,
         }
     }
