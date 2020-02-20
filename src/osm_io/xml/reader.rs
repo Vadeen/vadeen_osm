@@ -55,18 +55,13 @@ impl Attributes {
     }
 
     /// Get element (with get_required) and parse data into F.
-    fn get_parse<F: FromStr>(&self, field: &str) -> Result<F>
-    where
-        <F as std::str::FromStr>::Err: std::fmt::Debug,
-    {
+    fn get_parse<F: FromStr>(&self, field: &str) -> Result<F> {
         let s = self.get_required(field)?;
         self.parse(field, s)
     }
+
     /// Get element (with get_required) and parse data into F.
-    fn parse<F: FromStr>(&self, field: &str, s: &str) -> Result<F>
-    where
-        <F as std::str::FromStr>::Err: std::fmt::Debug,
-    {
+    fn parse<F: FromStr>(&self, field: &str, s: &str) -> Result<F> {
         str::parse(s).map_err(|_| {
             Error::new(
                 ParseError,
