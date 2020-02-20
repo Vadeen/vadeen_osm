@@ -214,8 +214,8 @@ impl O5mEncoder {
 
             let mut mem_bytes = Vec::new();
             mem_bytes.write_all(&[0x00])?;
-            mem_bytes.write_all(&mem_type.as_bytes().to_owned())?;
-            mem_bytes.write_all(&mem_role.as_bytes().to_owned())?;
+            mem_bytes.write_all(&mem_type.as_bytes())?;
+            mem_bytes.write_all(&mem_role.as_bytes())?;
             mem_bytes.write_all(&[0x00])?;
 
             writer.write_varint(delta)?;
