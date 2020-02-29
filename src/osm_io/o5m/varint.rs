@@ -33,13 +33,13 @@ impl VarInt {
     /// Convenience function for creating a (u)varint and returning its bytes.
     /// The function respects the signedness of the input type.
     ///
-    /// Equivalent to: `VarInt::from(value).bytes()`.
+    /// Equivalent to: `VarInt::from(value).into_bytes()`.
     pub fn create_bytes<T: Into<VarInt>>(value: T) -> Vec<u8> {
         let varint: VarInt = value.into();
-        varint.bytes()
+        varint.into_bytes()
     }
 
-    pub fn bytes(self) -> Vec<u8> {
+    pub fn into_bytes(self) -> Vec<u8> {
         self.bytes
     }
 }
