@@ -156,7 +156,7 @@ impl Attributes {
         match mem_type.as_ref() {
             "node" => Ok(RelationMember::Node(mem_ref, mem_role.to_owned())),
             "way" => Ok(RelationMember::Way(mem_ref, mem_role.to_owned())),
-            "rel" => Ok(RelationMember::Relation(mem_ref, mem_role.to_owned())),
+            "rel" | "relation" => Ok(RelationMember::Relation(mem_ref, mem_role.to_owned())),
             t => Err(Error::new(
                 ParseError,
                 Some(format!(
@@ -553,6 +553,18 @@ mod tests {
                 }
             }
         );
+    }
+
+    #[test]
+    fn read_relation_long_type_name() {
+        let xml = r#"<relation id="56688" version="28" changeset="203496" user="80n" uid="1238"
+                           visible="true" timestamp="2009-02-20T19:40:26Z">
+                         <member type="relation" ref="821603" role="outer"/>
+                     </relation>"#;
+        let mut reader = XmlReader::new(xml.as_bytes());
+        let osm = reader.read().unwrap();
+
+        assert_eq!(osm.relations.len(), 1);
     }
 
     #[test]
