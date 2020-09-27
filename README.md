@@ -6,7 +6,7 @@
 
 
 Vadeen OSM is a library for reading and writing [`Open Street Map`] files.
-Currently support xml and o5m. Pbf in the near future.
+Currently support xml and o5m.
 
 ## Goal
 There is many [`great tools`] that works with Open Street Map files, for example [`mkgmap`] which can convert OSM maps to a
