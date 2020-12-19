@@ -1,6 +1,6 @@
 # Vadeen OSM
 
-[![Build Status](https://travis-ci.com/FelixStridsberg/vadeen_osm.svg?branch=master)](https://travis-ci.com/FelixStridsberg/vadeen_osm)
+[![Build Status](https://github.com/Vadeen/vadeen_osm/workflows/Build/badge.svg)](https://github.com/Vadeen/vadeen_osm/actions?query=workflow%3Abuild)
 [![Crate](https://img.shields.io/crates/v/vadeen_osm.svg)](https://crates.io/crates/vadeen_osm)
 [![API](https://docs.rs/vadeen_osm/badge.svg)](https://docs.rs/vadeen_osm)
 
