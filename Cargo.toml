@@ -1,6 +1,6 @@
 [package]
 name = "vadeen_osm"
-version = "0.4.1"
+version = "0.4.2"
 license = "MIT"
 authors = ["Felix Stridsberg <felix.stridsberg@gmail.com>"]
 edition = "2018"
@@ -14,4 +14,4 @@ exclude = ["/.travis.yml"]
 
 [dependencies]
 chrono = "0.4"
-quick-xml = "0.17"
+quick-xml = "0.20"
