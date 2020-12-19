@@ -1,0 +1,49 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  stable:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: cargo --version
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+
+  beta:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: rustup install beta
+    - run: cargo +beta --version
+    - name: Build
+      run: cargo +beta build --verbose
+    - name: Run tests
+      run: cargo +beta test --verbose
+
+  nightly:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: rustup install nightly
+    - run: cargo +nightly --version
+    - name: Build
+      run: cargo +nightly build --verbose
+    - name: Run tests
+      run: cargo +nightly test --verbose
