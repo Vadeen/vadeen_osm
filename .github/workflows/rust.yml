@@ -10,16 +10,38 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  stable:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - run: rustup --version
-    - run: rustc --version
     - run: cargo --version
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+
+  beta:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: cargo +beta --version
+    - name: Build
+      run: cargo +beta build --verbose
+    - name: Run tests
+      run: cargo +beta test --verbose
+
+  nightly:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: cargo +nightly --version
+    - name: Build
+      run: cargo +nightly build --verbose
+    - name: Run tests
+      run: cargo +nightly test --verbose
