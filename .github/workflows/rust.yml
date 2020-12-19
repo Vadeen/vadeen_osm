@@ -28,6 +28,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - run: rustup install beta
     - run: cargo +beta --version
     - name: Build
       run: cargo +beta build --verbose
@@ -40,6 +41,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - run: rustup install nightly
     - run: cargo +nightly --version
     - name: Build
       run: cargo +nightly build --verbose
